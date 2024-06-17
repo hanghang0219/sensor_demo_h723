@@ -1,22 +1,11 @@
-TARGET= f723_lvgl
+TARGET= h723_ssr
 DEBUG = 1
 OPT = -Og
 BUILD_DIR = build
 
 LIB_ROOT = ../..
-DEV_ENV = ../../stm32armenv/f723zgt6_lvgl
+DEV_ENV = ../../stm32armenv/h723zgt6_ssr
 DRIVER_NAME = STM32H7xx_HAL_Driver
-
-
-rwildcard = $(foreach dir, $(wildcard $1), $(call rwildcard, $(dir)/*, $2) $(filter $2, $(dir)))
-
-# lvgl
-LVGL_DIR_NAME = lvgl
-LVGL_DIR = ../../stm32armlibs
-include $(LVGL_DIR)/$(LVGL_DIR_NAME)/component.mk
-LVGL_C_SOURCES := $(call rwildcard,$(LVGL_DIR)/$(LVGL_DIR_NAME)/src, %.c %.C)
-LVGL_INCDIRS := $(addprefix -I$(LVGL_DIR)/$(LVGL_DIR_NAME)/, $(COMPONENT_ADD_INCLUDEDIRS))
-
 
 
 ######################################
@@ -27,23 +16,12 @@ C_SOURCES =  \
 $(wildcard $(DEV_ENV)/Core/Src/*.c) \
 $(wildcard $(DEV_ENV)/Drivers/$(DRIVER_NAME)/Src/*.c) \
 $(wildcard $(DEV_ENV)/Middlewares/Third_Party/FreeRTOS/Source/*.c) \
-$(DEV_ENV)/Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2/cmsis_os2.c \
-$(DEV_ENV)/Middlewares/Third_Party/FreeRTOS/Source/portable/MemMang/heap_4.c \
-$(DEV_ENV)/Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F/port.c \
-$(wildcard $(LIB_ROOT)/stm32armlibs/lvgl/*.c) \
+$(wildcard $(DEV_ENV)/Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2/cmsis_os2.c) \
+$(wildcard $(DEV_ENV)/Middlewares/Third_Party/FreeRTOS/Source/portable/MemMang/heap_4.c) \
+$(wildcard $(DEV_ENV)/Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F/port.c) \
 $(wildcard $(LIB_ROOT)/stm32armlibs/segger_rtt/*.c) \
-$(wildcard ui_init/*.c) \
-$(wildcard ui_init/components/*.c) \
-$(wildcard ui_init/screens/*.c) \
 $(wildcard Src/*.c) \
-$(wildcard Src/lcd/config/*.c) \
-$(wildcard Src/lcd/core/*.c) \
-$(wildcard demo/*.c) \
-$(wildcard demo/widgets/*.c) \
-$(wildcard demo/widgets/assets/*.c) \
 
-
-C_SOURCES += $(LVGL_C_SOURCES)
 
 # ASM sources
 ASM_SOURCES =  \
@@ -96,19 +74,9 @@ C_INCLUDES =  \
 -I$(DEV_ENV)/Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2 \
 -I$(DEV_ENV)/Drivers/CMSIS/Include \
 -I$(DEV_ENV)/Drivers/CMSIS/Device/ST/STM32H7xx/Include \
--I$(LIB_ROOT)/stm32armlibs/lvgl \
 -I$(LIB_ROOT)/stm32armlibs/segger_rtt \
--Iui_init \
--Iui_init/components \
--Iui_init/screens \
--Idemo \
--Idemo/widgets \
--Idemo/widgets/assets \
--IInc/lcd/config \
--IInc/lcd/core \
--Idemo \
+-IInc\
 
-C_INCLUDES += $(LVGL_INCDIRS)
 
 # compile gcc flags
 ASFLAGS = $(MCU) $(AS_DEFS) $(AS_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections
