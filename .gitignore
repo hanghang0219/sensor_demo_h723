@@ -1,0 +1,13 @@
+*.o
+*.d
+*.bin
+*.map
+*.hex
+*.lst
+
+.DS_Store
+.project
+.idea
+.vscode
+*/DS_Store
+build
