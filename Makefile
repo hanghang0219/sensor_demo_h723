@@ -75,7 +75,7 @@ C_INCLUDES =  \
 -I$(DEV_ENV)/Drivers/CMSIS/Include \
 -I$(DEV_ENV)/Drivers/CMSIS/Device/ST/STM32H7xx/Include \
 -I$(LIB_ROOT)/stm32armlibs/segger_rtt \
--IInc\
+-IInc \
 
 
 # compile gcc flags

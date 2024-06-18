@@ -1,7 +1,8 @@
 
 
 #include "cmsis_os2.h"
-#include "stm32h723xx.h"
+#include "gxhtc3.h"
+#include "delay_tim.h"
 
 
 const osThreadAttr_t main_attributes = {
@@ -18,7 +19,8 @@ const osThreadAttr_t thread_attributes = {
 
 
 __NO_RETURN void mainThread(void* arg) {
-
+  GXHTC3_INIT();
+  al_get_gxth30_temp();
   while (1) {
 
     osDelay(1);
@@ -27,7 +29,7 @@ __NO_RETURN void mainThread(void* arg) {
 
 
 __NO_RETURN void threadThread(void* arg) {
-  osDelay(3000);
+
   while (1) {
   }
 }
