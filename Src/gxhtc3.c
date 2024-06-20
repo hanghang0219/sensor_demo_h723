@@ -37,7 +37,6 @@ void gxhtc3ToMaster(void) {
   osDelay(10);
 
   HAL_StatusTypeDef st = HAL_I2C_Master_Receive_IT(gxhtc3.i2c, GXHTC3_ADD << 1, gxhtc3.data, sizeof(gxhtc3.data));
-
   gxhtc3.err_st = st == HAL_OK ? GXHTC3_OK : GXHTC3_RECEIVE_ERR;
 }
 
