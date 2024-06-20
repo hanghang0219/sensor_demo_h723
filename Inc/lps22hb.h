@@ -5,4 +5,6 @@
 #ifndef H723_SSR_LPS22HB_H
 #define H723_SSR_LPS22HB_H
 
+
+void masterToLps22hb();
 #endif //H723_SSR_LPS22HB_H

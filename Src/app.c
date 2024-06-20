@@ -1,7 +1,7 @@
 
 
 #include "cmsis_os2.h"
-#include "stm32h723xx.h"
+#include "lps22hb.h"
 
 
 const osThreadAttr_t main_attributes = {
@@ -18,7 +18,8 @@ const osThreadAttr_t thread_attributes = {
 
 
 __NO_RETURN void mainThread(void* arg) {
-
+  osDelay(100);
+  masterToLps22hb();
   while (1) {
 
     osDelay(1);
