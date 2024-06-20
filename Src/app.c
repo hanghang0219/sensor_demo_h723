@@ -4,6 +4,7 @@
 #include "lps22hb.h"
 
 
+
 const osThreadAttr_t main_attributes = {
         .name = "main",
         .stack_size = 1024 * 4,
@@ -18,11 +19,10 @@ const osThreadAttr_t thread_attributes = {
 
 
 __NO_RETURN void mainThread(void* arg) {
-  osDelay(100);
-  masterToLps22hb();
-  while (1) {
 
-    osDelay(1);
+  while (1) {
+    masterToLps22hb();
+    osDelay(1000);
   }
 }
 
