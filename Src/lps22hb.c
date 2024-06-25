@@ -12,7 +12,7 @@ HAL_StatusTypeDef HAL_Printf(uint8_t* pData) {
   return HAL_UART_Transmit(&huart1, pData, strlen((char*) pData), 1000);
 }
 
-/* no interrupt */
+/* without interrupt */
 //void example(void) {
 //  uint8_t who_am_i = 0, ctrl_reg2 = 0;
 //  char display_buf[20];
