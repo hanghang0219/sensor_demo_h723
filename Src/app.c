@@ -53,9 +53,11 @@ void ZMI2CLps22hbInit(Lps22hb* ins) {
   HAL_I2C_RegisterCallback(ins->i2c, HAL_I2C_MEM_TX_COMPLETE_CB_ID, lpsTxCallback);
 }
 
+
 void MX_FREERTOS_Init(void) {
   lps22hbInit(&lps, &hi2c1);
   ZMI2CLps22hbInit(&lps);
+
 
   osThreadNew(mainThread, NULL, &main_attributes);
 //  osThreadNew(threadThread, NULL, &thread_attributes);
