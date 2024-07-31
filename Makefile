@@ -19,7 +19,7 @@ $(wildcard $(DEV_ENV)/Middlewares/Third_Party/FreeRTOS/Source/*.c) \
 $(wildcard $(DEV_ENV)/Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2/cmsis_os2.c) \
 $(wildcard $(DEV_ENV)/Middlewares/Third_Party/FreeRTOS/Source/portable/MemMang/heap_4.c) \
 $(wildcard $(DEV_ENV)/Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F/port.c) \
-$(wildcard $(LIB_ROOT)/stm32armlibs/segger_rtt/*.c) \
+$(wildcard $(LIB_ROOT)/stm32armlibs/segger_rtt/Src/*.c) \
 $(wildcard Src/*.c) \
 
 
@@ -74,7 +74,7 @@ C_INCLUDES =  \
 -I$(DEV_ENV)/Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2 \
 -I$(DEV_ENV)/Drivers/CMSIS/Include \
 -I$(DEV_ENV)/Drivers/CMSIS/Device/ST/STM32H7xx/Include \
--I$(LIB_ROOT)/stm32armlibs/segger_rtt \
+-I$(LIB_ROOT)/stm32armlibs/segger_rtt/Inc \
 -IInc\
 
 
