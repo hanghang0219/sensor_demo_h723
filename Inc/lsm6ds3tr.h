@@ -6,17 +6,17 @@
 #define LSM6DS3TR_H
 
 #include "i2c.h"
-#define LSM6DS3TR_READ 0XD5
-#define LSM6DS3TR_WRITE 0XD4
+#define LSM6DS3TR_READ 0xD5
+#define LSM6DS3TR_WRITE 0xD4
 
 /* reg addr */
-#define LSM6DS3TR_ID_ADD 0X0F
-#define LSM6DS3TR_CTRL1_XL 0X10  // acceleration reg
-#define LSM6DS3TR_CTRL2_G 0X11   // gyroscope reg
+#define LSM6DS3TR_ID_ADD 0x0F
+#define LSM6DS3TR_CTRL1_XL 0x10  // acceleration reg
+#define LSM6DS3TR_CTRL2_G 0x11   // gyroscope reg
 #define LSM6DS3TR_CTRL3_C_ADD \
   0X12  // reset & addr auto increase & bdu update auto
-#define LSM6DS3TR_CTRL8_XL 0X17
-#define LSM6DS3TR_CTRL7_G 0X16
+#define LSM6DS3TR_CTRL8_XL 0x17
+#define LSM6DS3TR_CTRL7_G 0x16
 #define LSM6DS3TRC_CTRL6_C 0x15
 #define LSM6DS3TRC_CTRL4_C 0x13
 #define LSM6DS3TRC_STATUS_REG 0x1E
@@ -42,15 +42,15 @@
 #define LSM6DS3TRC_ACC_RATE_1660HZ 0x80
 #define LSM6DS3TRC_ACC_RATE_3330HZ 0x90
 #define LSM6DS3TRC_ACC_RATE_6660HZ 0xA0
-//Accelerometer full-scale.
+// Accelerometer full-scale.
 #define LSM6DS3TRC_ACC_FSXL_2G 0x00
 #define LSM6DS3TRC_ACC_FSXL_16G 0x04
 #define LSM6DS3TRC_ACC_FSXL_4G 0x08
 #define LSM6DS3TRC_ACC_FSXL_8G 0x0C
-//Accelerometer analog chain bandwidth
+// Accelerometer analog chain bandwidth
 #define LSM6DS3TRC_ACC_BW0XL_1500HZ 0x00
 #define LSM6DS3TRC_ACC_BW0XL_400HZ 0x01
-//Accelerometer bandwidth selection
+// Accelerometer bandwidth selection
 #define LSM6DS3TRC_ACC_LOW_PASS_ODR_50 0x88
 #define LSM6DS3TRC_ACC_LOW_PASS_ODR_100 0xA8
 #define LSM6DS3TRC_ACC_LOW_PASS_ODR_9 0xC8
@@ -69,7 +69,7 @@
 #define LSM6DS3TRC_GYR_RATE_1660HZ 0x80
 #define LSM6DS3TRC_GYR_RATE_3330HZ 0x90
 #define LSM6DS3TRC_GYR_RATE_6660HZ 0xA0
-//Gyroscope full-scale.
+// Gyroscope full-scale.
 #define LSM6DS3TRC_GYR_FSG_245 0x00
 #define LSM6DS3TRC_GYR_FSG_500 0x04
 #define LSM6DS3TRC_GYR_FSG_1000 0x08
@@ -77,7 +77,7 @@
 #define LSM6DS3TRC_CTRL1_XL 0x10
 #define LSM6DS3TRC_CTRL8_XL 0x17
 
-//CTRL7_G register
+// CTRL7_G register value
 #define LSM6DS3TRC_CTRL7_G_HM_MODE_ENABLE 0x00
 #define LSM6DS3TRC_CTRL7_G_HM_MODE_DISABLE 0x80
 #define LSM6DS3TRC_CTRL7_G_HP_EN_DISABLE 0x00
@@ -89,7 +89,7 @@
 #define LSM6DS3TRC_CTRL7_G_ROUNDING_STATUS_DISABLE 0x04
 #define LSM6DS3TRC_CTRL7_G_ROUNDING_STATUS_ENABLE 0x00
 
-//CTRL6_C register
+// CTRL6_C register value
 #define LSM6DS3TRC_CTRL6_C_EDGE_TRIGGER 0x80
 #define LSM6DS3TRC_CTRL6_C_LEVEL_TRIGGER 0x40
 #define LSM6DS3TRC_CTRL6_C_LEVEL_LATCHED 0x60
@@ -101,7 +101,7 @@
 #define LSM6DS3TRC_CTRL6_C_FTYPE_3 0x02
 #define LSM6DS3TRC_CTRL6_C_FTYPE_4 0x03
 
-//CTRL4_C register
+// CTRL4_C register value
 #define LSM6DS3TRC_CTRL4_DEN_XL_EN_DISABLE 0x00
 #define LSM6DS3TRC_CTRL4_DEN_XL_EN_ENABLE 0x80
 #define LSM6DS3TRC_CTRL4_SLEEP_ENABLE 0x40
@@ -115,6 +115,36 @@
 #define LSM6DS3TRC_CTRL4_LPF1_SELG_ENABLE 0x02
 #define LSM6DS3TRC_CTRL4_LPF1_SELG_DISABLE 0x00
 
+// FIFO register
+#define LSM6DS3TRC_FIFO_CRTL1 0x06  // only watermark value
+#define LSM6DS3TRC_FIFO_CRTL2 0x07
+#define LSM6DS3TRC_FIFO_CRTL5 0x0A
+
+// Timer register
+#define LSM6DS3TR_TIMER_CRTL10 0x19
+#define LSM6DS3TR_TIMER_WAKE_UP_DUR 0x5C
+
+// FIFO MODE
+#define LSM6DS3TR_BYPASS_MODE 0x00
+#define LSM6DS3TR_FIFO_MODE 0x01
+#define LSM6DS3TR_STREAM_TO_FIFO_MODE 0x03
+#define LSM6DS3TR_BYPASS_TO_STREAM_MODE 0x04
+#define LSM6DS3TR_STREAM_MODE 0x06
+#define LSM6DS3TR_FIFO_MODE_ND 0x08
+
+// FIFO ODR
+#define LSM6DS3TR_FIFO_DISABLE 0x00
+#define LSM6DS3TR_FIFO_12Hz5 0x01
+#define LSM6DS3TR_FIFO_26Hz 0x02
+#define LSM6DS3TR_FIFO_52Hz 0x03
+#define LSM6DS3TR_FIFO_104Hz 0x04
+#define LSM6DS3TR_FIFO_208Hz 0x05
+#define LSM6DS3TR_FIFO_416Hz 0x06
+#define LSM6DS3TR_FIFO_833Hz 0x07
+#define LSM6DS3TR_FIFO_1k66Hz 0x08
+#define LSM6DS3TR_FIFO_3k33Hz 0x09
+#define LSM6DS3TR_FIFO_6k66Hz 0x10
+
 typedef enum {
   LSM6DS3TR_OK,
   LSM6DS3TR_ID_ERR,
@@ -126,6 +156,8 @@ typedef enum {
   LSM6DS3TR_REG6_ERR,
   LSM6DS3TR_REG4_ERR,
   LSM6DS3TR_STATUS_UPDATE_ERR,
+  LSM6DS3TR_FIFO_SET_WATERMARK_ERR,
+  LSM6DS3TR_FIFO_SET_MODE_ERR,
   LSM6DS3TR_TX_ERR,
   LSM6DS3TR_RX_ERR,
   LSM6DS3TR_ERR
@@ -148,9 +180,9 @@ typedef struct {
   uint8_t flag;
 } Lsm6ds3tr;
 
-int lsm6ds3tr_reg_init(Lsm6ds3tr *ins);
-void lsm6ds3tr_init(Lsm6ds3tr *ins, I2C_HandleTypeDef *i2c);
-void lsm6ds3tr_output_read_cb(Lsm6ds3tr *ins);
-void lsm6ds3tr_acc_gry_output(Lsm6ds3tr *ins);
+int lsm6ds3trRegInit(Lsm6ds3tr *ins);
+void lsm6ds3trInit(Lsm6ds3tr *ins, I2C_HandleTypeDef *i2c);
+void lsm6ds3trOutputReadCb(Lsm6ds3tr *ins);
+void lsm6ds3trAccGryOutput(Lsm6ds3tr *ins);
 void test2();
 #endif  //LSM6DS3TR_H

@@ -7,7 +7,9 @@
 #include "SEGGER_RTT.h"
 #include "lsm6ds3tr_motionFX.h"
 
-void lsm6ds3tr_init(Lsm6ds3tr *ins, I2C_HandleTypeDef *i2c) {
+int lsm6dstrFifoInit(Lsm6ds3tr *ins);
+
+void lsm6ds3trInit(Lsm6ds3tr *ins, I2C_HandleTypeDef *i2c) {
   ins->i2c = i2c;
   ins->err_st = LSM6DS3TR_OK;
   ins->acc_x = 0;
@@ -20,14 +22,14 @@ void lsm6ds3tr_init(Lsm6ds3tr *ins, I2C_HandleTypeDef *i2c) {
 
 /* 1.identify id */
 /**
-  * @param devReadAddr  LSM6DS3TR_READ
-  * @param memAddr LSM6DS3TR_ID_ADD
+  * @param dev_read_addr  LSM6DS3TR_READ
+  * @param mem_addr LSM6DS3TR_ID_ADD
   */
-int lsm6dstr_who_i_am(Lsm6ds3tr *ins, uint8_t devReadAddr, uint8_t memAddr) {
+int lsm6dstrWhoIAm(Lsm6ds3tr *ins, uint8_t dev_read_addr, uint8_t mem_addr) {
 
   uint8_t who_am_i = 0;
   HAL_StatusTypeDef st = HAL_I2C_Mem_Read(
-      ins->i2c, devReadAddr, memAddr, I2C_MEMADD_SIZE_8BIT, &who_am_i, 1, 1);
+      ins->i2c, dev_read_addr, mem_addr, I2C_MEMADD_SIZE_8BIT, &who_am_i, 1, 1);
   if (st != HAL_OK || who_am_i != 0x6A) {
     ins->err_st = LSM6DS3TR_ID_ERR;
     return -1;
@@ -41,23 +43,23 @@ int lsm6dstr_who_i_am(Lsm6ds3tr *ins, uint8_t devReadAddr, uint8_t memAddr) {
  *  bdu update automatically   6:0
  */
 /**
-  * @param devReadAddr  LSM6DS3TR_READ
-  * @param devWriteAddr LSM6DS3TR_WRITE
-  * @param memAddr LSM6DS3TR_CTRL3_C_ADD
-  * @param memValue LSM6DS3TR_CTRL3_C_VALUE
+  * @param dev_read_addr  LSM6DS3TR_READ
+  * @param dev_write_addr LSM6DS3TR_WRITE
+  * @param mem_addr LSM6DS3TR_CTRL3_C_ADD
+  * @param mem_value LSM6DS3TR_CTRL3_C_VALUE
   */
-int lsm6dstr_reset_device(Lsm6ds3tr *ins, uint8_t devReadAddr,
-                          uint8_t devWriteAddr, uint8_t memAddr,
-                          uint8_t memValue) {
+int lsm6dstrResetDevice(Lsm6ds3tr *ins, uint8_t dev_read_addr,
+                        uint8_t dev_write_addr, uint8_t mem_addr,
+                        uint8_t mem_value) {
   uint8_t reset_sw_value = 0;
-  uint8_t reset_boot_value[1] = {memValue};
+  uint8_t reset_boot_value[1] = {mem_value};
   HAL_StatusTypeDef st =
-      HAL_I2C_Mem_Write(ins->i2c, devWriteAddr, memAddr, I2C_MEMADD_SIZE_8BIT,
-                        reset_boot_value, 1, 1);
+      HAL_I2C_Mem_Write(ins->i2c, dev_write_addr, mem_addr,
+                        I2C_MEMADD_SIZE_8BIT, reset_boot_value, 1, 1);
 
   osDelay(3);  // must wait reset
 
-  st |= HAL_I2C_Mem_Read(&hi2c1, devReadAddr, memAddr, I2C_MEMADD_SIZE_8BIT,
+  st |= HAL_I2C_Mem_Read(&hi2c1, dev_read_addr, mem_addr, I2C_MEMADD_SIZE_8BIT,
                          &reset_sw_value, 1, 1);
 
   if (st != HAL_OK) {
@@ -69,23 +71,23 @@ int lsm6dstr_reset_device(Lsm6ds3tr *ins, uint8_t devReadAddr,
 
 /* 3.acceleration ：833hz 4g*/
 /**
-  * @param devReadAddr  LSM6DS3TR_READ
-  * @param devWriteAddr LSM6DS3TR_WRITE
-  * @param memAddr LSM6DS3TR_CTRL1_XL
-  * @param memValue1 LSM6DS3TRC_ACC_RATE_833HZ
-  * @param memValue2 LSM6DS3TRC_ACC_FSXL_4G
+  * @param dev_read_addr  LSM6DS3TR_READ
+  * @param dev_write_addr LSM6DS3TR_WRITE
+  * @param mem_addr LSM6DS3TR_CTRL1_XL
+  * @param mem_value1 LSM6DS3TRC_ACC_RATE_833HZ
+  * @param mem_value2 LSM6DS3TRC_ACC_FSXL_4G
   */
-int lsm6ds3tr_acc_param(Lsm6ds3tr *ins, uint8_t devReadAddr,
-                        uint8_t devWriteAddr, uint8_t memAddr,
-                        uint8_t memValue1, uint8_t memValue2) {
+int lsm6ds3trAccParam(Lsm6ds3tr *ins, uint8_t dev_read_addr,
+                      uint8_t dev_write_addr, uint8_t mem_addr,
+                      uint8_t mem_value1, uint8_t mem_value2) {
   uint8_t acceleration = 0;
   HAL_StatusTypeDef st =
-      HAL_I2C_Mem_Read(ins->i2c, devReadAddr, memAddr, I2C_MEMADD_SIZE_8BIT,
+      HAL_I2C_Mem_Read(ins->i2c, dev_read_addr, mem_addr, I2C_MEMADD_SIZE_8BIT,
                        &acceleration, 1, 1);
-  acceleration |= memValue1;
-  acceleration |= memValue2;
-  st |= HAL_I2C_Mem_Write(ins->i2c, devWriteAddr, memAddr, I2C_MEMADD_SIZE_8BIT,
-                          &acceleration, 1, 1);
+  acceleration |= mem_value1;
+  acceleration |= mem_value2;
+  st |= HAL_I2C_Mem_Write(ins->i2c, dev_write_addr, mem_addr,
+                          I2C_MEMADD_SIZE_8BIT, &acceleration, 1, 1);
 
   if (st != HAL_OK) {
     ins->err_st = LSM6DS3TR_ACC_PARAM_ERR;
@@ -96,22 +98,23 @@ int lsm6ds3tr_acc_param(Lsm6ds3tr *ins, uint8_t devReadAddr,
 
 /* 4.gyroscope 833hz 2000*/
 /**
-  * @param devReadAddr  LSM6DS3TR_READ
-  * @param devWriteAddr LSM6DS3TR_WRITE
-  * @param memAddr LSM6DS3TR_CTRL2_G
-  * @param memValue1 LSM6DS3TRC_GYR_RATE_833HZ
-  * @param memValue2 LSM6DS3TRC_GYR_FSG_2000
+  * @param dev_read_addr  LSM6DS3TR_READ
+  * @param dev_write_addr LSM6DS3TR_WRITE
+  * @param mem_addr LSM6DS3TR_CTRL2_G
+  * @param mem_value1 LSM6DS3TRC_GYR_RATE_833HZ
+  * @param mem_value2 LSM6DS3TRC_GYR_FSG_2000
   */
-int lsm6ds3tr_gyr_param(Lsm6ds3tr *ins, uint8_t devReadAddr,
-                        uint8_t devWriteAddr, uint8_t memAddr,
-                        uint8_t memValue1, uint8_t memValue2) {
+int lsm6ds3trGyrParam(Lsm6ds3tr *ins, uint8_t dev_read_addr,
+                      uint8_t dev_write_addr, uint8_t mem_addr,
+                      uint8_t mem_value1, uint8_t mem_value2) {
   uint8_t gyroscope = 0;
-  HAL_StatusTypeDef st = HAL_I2C_Mem_Read(
-      ins->i2c, devReadAddr, memAddr, I2C_MEMADD_SIZE_8BIT, &gyroscope, 1, 1);
-  gyroscope |= memValue1;
-  gyroscope |= memValue2;
-  st |= HAL_I2C_Mem_Write(ins->i2c, devWriteAddr, memAddr, I2C_MEMADD_SIZE_8BIT,
-                          &gyroscope, 1, 1);
+  HAL_StatusTypeDef st =
+      HAL_I2C_Mem_Read(ins->i2c, dev_read_addr, mem_addr, I2C_MEMADD_SIZE_8BIT,
+                       &gyroscope, 1, 1);
+  gyroscope |= mem_value1;
+  gyroscope |= mem_value2;
+  st |= HAL_I2C_Mem_Write(ins->i2c, dev_write_addr, mem_addr,
+                          I2C_MEMADD_SIZE_8BIT, &gyroscope, 1, 1);
 
   if (st != HAL_OK) {
     ins->err_st = LSM6DS3TR_GYR_PARAM_ERR;
@@ -122,30 +125,30 @@ int lsm6ds3tr_gyr_param(Lsm6ds3tr *ins, uint8_t devReadAddr,
 
 /* 6.acceleration bandwidth */
 /**
-  * @param devReadAddr  LSM6DS3TR_READ
-  * @param devWriteAddr LSM6DS3TR_WRITE
-  * @param memAddr1 LSM6DS3TR_CTRL1_XL
-  * @param memAddr2 LSM6DS3TR_CTRL8_XL
-  * @param memValue1 LSM6DS3TRC_ACC_BW0XL_400HZ
-  * @param memValue2 LSM6DS3TRC_ACC_LOW_PASS_ODR_100
+  * @param dev_read_addr  LSM6DS3TR_READ
+  * @param dev_write_addr LSM6DS3TR_WRITE
+  * @param mem_addr1 LSM6DS3TR_CTRL1_XL
+  * @param mem_addr2 LSM6DS3TR_CTRL8_XL
+  * @param mem_value1 LSM6DS3TRC_ACC_BW0XL_400HZ
+  * @param mem_value2 LSM6DS3TRC_ACC_LOW_PASS_ODR_100
   */
-int lsm6ds3tr_acc_bandwidth(Lsm6ds3tr *ins, uint8_t devReadAddr,
-                            uint8_t devWriteAddr, uint8_t memAddr1,
-                            uint8_t memAddr2, uint8_t memValue1,
-                            uint8_t memValue2) {
+int lsm6ds3trAccBandwidth(Lsm6ds3tr *ins, uint8_t dev_read_addr,
+                          uint8_t dev_write_addr, uint8_t mem_addr1,
+                          uint8_t mem_addr2, uint8_t mem_value1,
+                          uint8_t mem_value2) {
   uint8_t acc_bandwidth = 0;
   HAL_StatusTypeDef st =
-      HAL_I2C_Mem_Read(ins->i2c, devReadAddr, memAddr1, I2C_MEMADD_SIZE_8BIT,
+      HAL_I2C_Mem_Read(ins->i2c, dev_read_addr, mem_addr1, I2C_MEMADD_SIZE_8BIT,
                        &acc_bandwidth, 1, 1);
-  acc_bandwidth |= memValue1;
-  st |= HAL_I2C_Mem_Write(&hi2c1, devWriteAddr, memAddr1, I2C_MEMADD_SIZE_8BIT,
-                          &acc_bandwidth, 1, 1);
+  acc_bandwidth |= mem_value1;
+  st |= HAL_I2C_Mem_Write(&hi2c1, dev_write_addr, mem_addr1,
+                          I2C_MEMADD_SIZE_8BIT, &acc_bandwidth, 1, 1);
 
-  st |= HAL_I2C_Mem_Read(&hi2c1, devReadAddr, memAddr2, I2C_MEMADD_SIZE_8BIT,
+  st |= HAL_I2C_Mem_Read(&hi2c1, dev_read_addr, mem_addr2, I2C_MEMADD_SIZE_8BIT,
                          &acc_bandwidth, 1, 1);
-  acc_bandwidth |= memValue2;
-  st |= HAL_I2C_Mem_Write(&hi2c1, devWriteAddr, memAddr2, I2C_MEMADD_SIZE_8BIT,
-                          &acc_bandwidth, 1, 1);
+  acc_bandwidth |= mem_value2;
+  st |= HAL_I2C_Mem_Write(&hi2c1, dev_write_addr, mem_addr2,
+                          I2C_MEMADD_SIZE_8BIT, &acc_bandwidth, 1, 1);
   if (st != HAL_OK) {
     ins->err_st = LSM6DS3TR_ACC_BANDWIDTH_ERR;
     return -1;
@@ -155,22 +158,22 @@ int lsm6ds3tr_acc_bandwidth(Lsm6ds3tr *ins, uint8_t devReadAddr,
 
 /* 7.reg 7 */
 /**
-  * @param devReadAddr  LSM6DS3TR_READ
-  * @param devWriteAddr LSM6DS3TR_WRITE
-  * @param memAddr LSM6DS3TR_CTRL7_G
-  * @param memValue1 LSM6DS3TRC_CTRL7_G_HP_EN_ENABLE
-  * @param memValue2 LSM6DS3TRC_CTRL7_G_HPM_260MHZ
+  * @param dev_read_addr  LSM6DS3TR_READ
+  * @param dev_write_addr LSM6DS3TR_WRITE
+  * @param mem_addr LSM6DS3TR_CTRL7_G
+  * @param mem_value1 LSM6DS3TRC_CTRL7_G_HP_EN_ENABLE
+  * @param mem_value2 LSM6DS3TRC_CTRL7_G_HPM_260MHZ
   */
-int lsm6ds3tr_reg7_param(Lsm6ds3tr *ins, uint8_t devReadAddr,
-                         uint8_t devWriteAddr, uint8_t memAddr,
-                         uint8_t memValue1, uint8_t memValue2) {
+int lsm6ds3trReg7Param(Lsm6ds3tr *ins, uint8_t dev_read_addr,
+                       uint8_t dev_write_addr, uint8_t mem_addr,
+                       uint8_t mem_value1, uint8_t mem_value2) {
 
   uint8_t buf[1] = {0};
-  HAL_StatusTypeDef st = HAL_I2C_Mem_Read(ins->i2c, devReadAddr, memAddr,
+  HAL_StatusTypeDef st = HAL_I2C_Mem_Read(ins->i2c, dev_read_addr, mem_addr,
                                           I2C_MEMADD_SIZE_8BIT, buf, 1, 1);
-  buf[0] |= memValue1 | memValue2;
-  st |= HAL_I2C_Mem_Write(ins->i2c, devWriteAddr, memAddr, I2C_MEMADD_SIZE_8BIT,
-                          buf, 1, 1);
+  buf[0] |= mem_value1 | mem_value2;
+  st |= HAL_I2C_Mem_Write(ins->i2c, dev_write_addr, mem_addr,
+                          I2C_MEMADD_SIZE_8BIT, buf, 1, 1);
   if (st != HAL_OK) {
     ins->err_st = LSM6DS3TR_REG7_ERR;
     return -1;
@@ -180,21 +183,21 @@ int lsm6ds3tr_reg7_param(Lsm6ds3tr *ins, uint8_t devReadAddr,
 
 /* 8.reg 6 */
 /**
-  * @param devReadAddr  LSM6DS3TR_READ
-  * @param devWriteAddr LSM6DS3TR_WRITE
-  * @param memAddr LSM6DS3TRC_CTRL6_C
-  * @param memValue1 LSM6DS3TRC_CTRL6_C_FTYPE_1
+  * @param dev_read_addr  LSM6DS3TR_READ
+  * @param dev_write_addr LSM6DS3TR_WRITE
+  * @param mem_addr LSM6DS3TRC_CTRL6_C
+  * @param mem_value1 LSM6DS3TRC_CTRL6_C_FTYPE_1
   */
-int lsm6ds3tr_reg6_param(Lsm6ds3tr *ins, uint8_t devReadAddr,
-                         uint8_t devWriteAddr, uint8_t memAddr,
-                         uint8_t memValue1) {
+int lsm6ds3trReg6Param(Lsm6ds3tr *ins, uint8_t dev_read_addr,
+                       uint8_t dev_write_addr, uint8_t mem_addr,
+                       uint8_t mem_value1) {
 
   uint8_t buf[1] = {0};
-  HAL_StatusTypeDef st = HAL_I2C_Mem_Read(ins->i2c, devReadAddr, memAddr,
+  HAL_StatusTypeDef st = HAL_I2C_Mem_Read(ins->i2c, dev_read_addr, mem_addr,
                                           I2C_MEMADD_SIZE_8BIT, buf, 1, 1);
-  buf[0] |= memValue1;
-  st |= HAL_I2C_Mem_Write(ins->i2c, devWriteAddr, memAddr, I2C_MEMADD_SIZE_8BIT,
-                          buf, 1, 1);
+  buf[0] |= mem_value1;
+  st |= HAL_I2C_Mem_Write(ins->i2c, dev_write_addr, mem_addr,
+                          I2C_MEMADD_SIZE_8BIT, buf, 1, 1);
   if (st != HAL_OK) {
     ins->err_st = LSM6DS3TR_REG6_ERR;
     return -1;
@@ -204,21 +207,21 @@ int lsm6ds3tr_reg6_param(Lsm6ds3tr *ins, uint8_t devReadAddr,
 
 /* 8.reg 4 */
 /**
-  * @param devReadAddr  LSM6DS3TR_READ
-  * @param devWriteAddr LSM6DS3TR_WRITE
-  * @param memAddr LSM6DS3TRC_CTRL4_C
-  * @param memValue1 LSM6DS3TRC_CTRL4_LPF1_SELG_ENABLE
+  * @param dev_read_addr  LSM6DS3TR_READ
+  * @param dev_write_addr LSM6DS3TR_WRITE
+  * @param mem_addr LSM6DS3TRC_CTRL4_C
+  * @param mem_value1 LSM6DS3TRC_CTRL4_LPF1_SELG_ENABLE
   */
-int lsm6ds3tr_reg4_param(Lsm6ds3tr *ins, uint8_t devReadAddr,
-                         uint8_t devWriteAddr, uint8_t memAddr,
-                         uint8_t memValue1) {
+int lsm6ds3trReg4Param(Lsm6ds3tr *ins, uint8_t dev_read_addr,
+                       uint8_t dev_write_addr, uint8_t mem_addr,
+                       uint8_t mem_value1) {
 
   uint8_t buf[1] = {0};
-  HAL_StatusTypeDef st = HAL_I2C_Mem_Read(ins->i2c, devReadAddr, memAddr,
+  HAL_StatusTypeDef st = HAL_I2C_Mem_Read(ins->i2c, dev_read_addr, mem_addr,
                                           I2C_MEMADD_SIZE_8BIT, buf, 1, 1);
-  buf[0] |= memValue1;
-  st |= HAL_I2C_Mem_Write(ins->i2c, devWriteAddr, memAddr, I2C_MEMADD_SIZE_8BIT,
-                          buf, 1, 1);
+  buf[0] |= mem_value1;
+  st |= HAL_I2C_Mem_Write(ins->i2c, dev_write_addr, mem_addr,
+                          I2C_MEMADD_SIZE_8BIT, buf, 1, 1);
   if (st != HAL_OK) {
     ins->err_st = LSM6DS3TR_REG4_ERR;
     return -1;
@@ -226,55 +229,181 @@ int lsm6ds3tr_reg4_param(Lsm6ds3tr *ins, uint8_t devReadAddr,
   return 0;
 }
 
-int lsm6ds3tr_reg_init(Lsm6ds3tr *ins) {
+#define CHECK_RESULT(result) \
+  do {                       \
+    if (result != 0)         \
+      return result;         \
+  } while (0)
 
-  int result = lsm6dstr_who_i_am(ins, LSM6DS3TR_READ, LSM6DS3TR_ID_ADD);
-  if (result != 0)
-    return result;
+int lsm6ds3trRegInit(Lsm6ds3tr *ins) {
+
+  int result = lsm6dstrWhoIAm(ins, LSM6DS3TR_READ, LSM6DS3TR_ID_ADD);
+  CHECK_RESULT(result);
+
+  result = lsm6dstrResetDevice(ins, LSM6DS3TR_READ, LSM6DS3TR_WRITE,
+                               LSM6DS3TR_CTRL3_C_ADD, LSM6DS3TR_CTRL3_C_VALUE);
+  CHECK_RESULT(result);
+
+  result = lsm6ds3trAccParam(ins, LSM6DS3TR_READ, LSM6DS3TR_WRITE,
+                             LSM6DS3TR_CTRL1_XL, LSM6DS3TRC_ACC_RATE_833HZ,
+                             LSM6DS3TRC_ACC_FSXL_4G);
+  CHECK_RESULT(result);
 
   result =
-      lsm6dstr_reset_device(ins, LSM6DS3TR_READ, LSM6DS3TR_WRITE,
-                            LSM6DS3TR_CTRL3_C_ADD, LSM6DS3TR_CTRL3_C_VALUE);
-  if (result != 0)
-    return result;
+      lsm6ds3trGyrParam(ins, LSM6DS3TR_READ, LSM6DS3TR_WRITE, LSM6DS3TR_CTRL2_G,
+                        LSM6DS3TRC_GYR_RATE_833HZ, LSM6DS3TRC_GYR_FSG_2000);
+  CHECK_RESULT(result);
 
-  result = lsm6ds3tr_acc_param(ins, LSM6DS3TR_READ, LSM6DS3TR_WRITE,
-                               LSM6DS3TR_CTRL1_XL, LSM6DS3TRC_ACC_RATE_833HZ,
-                               LSM6DS3TRC_ACC_FSXL_4G);
-  if (result != 0)
-    return result;
+  result = lsm6ds3trAccBandwidth(ins, LSM6DS3TR_READ, LSM6DS3TR_WRITE,
+                                 LSM6DS3TR_CTRL1_XL, LSM6DS3TR_CTRL8_XL,
+                                 LSM6DS3TRC_ACC_BW0XL_400HZ,
+                                 LSM6DS3TRC_ACC_LOW_PASS_ODR_100);
+  CHECK_RESULT(result);
 
-  result = lsm6ds3tr_gyr_param(ins, LSM6DS3TR_READ, LSM6DS3TR_WRITE,
-                               LSM6DS3TR_CTRL2_G, LSM6DS3TRC_GYR_RATE_833HZ,
-                               LSM6DS3TRC_GYR_FSG_2000);
-  if (result != 0)
-    return result;
-
-  result = lsm6ds3tr_acc_bandwidth(ins, LSM6DS3TR_READ, LSM6DS3TR_WRITE,
-                                   LSM6DS3TR_CTRL1_XL, LSM6DS3TR_CTRL8_XL,
-                                   LSM6DS3TRC_ACC_BW0XL_400HZ,
-                                   LSM6DS3TRC_ACC_LOW_PASS_ODR_100);
-  if (result != 0)
-    return result;
-
-  result = lsm6ds3tr_reg7_param(
+  result = lsm6ds3trReg7Param(
       ins, LSM6DS3TR_READ, LSM6DS3TR_WRITE, LSM6DS3TR_CTRL7_G,
       LSM6DS3TRC_CTRL7_G_HP_EN_ENABLE, LSM6DS3TRC_CTRL7_G_HPM_260MHZ);
-  if (result != 0)
-    return result;
+  CHECK_RESULT(result);
 
-  result = lsm6ds3tr_reg6_param(ins, LSM6DS3TR_READ, LSM6DS3TR_WRITE,
-                                LSM6DS3TRC_CTRL6_C, LSM6DS3TRC_CTRL6_C_FTYPE_1);
-  if (result != 0)
-    return result;
+  result = lsm6ds3trReg6Param(ins, LSM6DS3TR_READ, LSM6DS3TR_WRITE,
+                              LSM6DS3TRC_CTRL6_C, LSM6DS3TRC_CTRL6_C_FTYPE_1);
+  CHECK_RESULT(result);
 
-  result = lsm6ds3tr_reg4_param(ins, LSM6DS3TR_READ, LSM6DS3TR_WRITE,
-                                LSM6DS3TRC_CTRL4_C,
-                                LSM6DS3TRC_CTRL4_LPF1_SELG_ENABLE);
-  if (result != 0)
-    return result;
+  result =
+      lsm6ds3trReg4Param(ins, LSM6DS3TR_READ, LSM6DS3TR_WRITE,
+                         LSM6DS3TRC_CTRL4_C, LSM6DS3TRC_CTRL4_LPF1_SELG_ENABLE);
+  CHECK_RESULT(result);
+
+  result = lsm6dstrFifoInit(ins);
+  CHECK_RESULT(result);
+  return 0;
+}
+
+/**
+  * @param dev_read_addr  LSM6DS3TR_READ
+  * @param dev_write_addr LSM6DS3TR_WRITE
+  * @param mem_addr1 LSM6DS3TRC_FIFO_CRTL1
+  * @param mem_addr2 LSM6DS3TRC_FIFO_CRTL2
+  * @param water_mark multiples of 24
+  */
+int lsm6ds3trFifoWatermarkSet(Lsm6ds3tr *ins, uint8_t dev_read_addr,
+                              uint8_t dev_write_addr, uint8_t mem_addr1,
+                              uint8_t mem_addr2, uint16_t water_mark) {
+  // watermark -> reg value  (0~2048) * 2
+  uint8_t low_reg_value = (uint8_t)(water_mark & 0x00ff);
+  uint8_t high_reg_value = (uint8_t)((water_mark & (0x0007 << 8)) >> 8);
+
+  uint8_t buf[1] = {low_reg_value};
+  HAL_StatusTypeDef st = HAL_I2C_Mem_Write(ins->i2c, dev_write_addr, mem_addr1,
+                                           I2C_MEMADD_SIZE_8BIT, buf, 1, 1);
+
+  st |= HAL_I2C_Mem_Read(ins->i2c, dev_read_addr, mem_addr2,
+                         I2C_MEMADD_SIZE_8BIT, buf, 1, 1);
+
+  buf[0] &= 0xf8;
+  buf[0] |= high_reg_value;
+  st |= HAL_I2C_Mem_Write(ins->i2c, dev_write_addr, mem_addr2,
+                          I2C_MEMADD_SIZE_8BIT, buf, 1, 1);
+
+  if (st != HAL_OK) {
+    ins->err_st = LSM6DS3TR_FIFO_SET_WATERMARK_ERR;
+    return -1;
+  }
+  return 0;
+}
+
+/**
+  * @param dev_write_addr LSM6DS3TR_WRITE
+  * @param mem_addr LSM6DS3TRC_FIFO_CRTL5
+  * @param mode_set LSM6DS3TR_C_STREAM_MODE
+  * @param fifo_odr LSM6DS3TR_C_FIFO_833Hz
+  */
+int lsm6ds3trFifoModeSet(Lsm6ds3tr *ins, uint8_t dev_write_addr,
+                         uint8_t mem_addr, uint8_t mode_set, uint8_t fifo_odr) {
+  uint8_t buf[1] = {mode_set | (fifo_odr << 3)};
+  HAL_StatusTypeDef st = HAL_I2C_Mem_Write(ins->i2c, dev_write_addr, mem_addr,
+                                           I2C_MEMADD_SIZE_8BIT, buf, 1, 1);
+
+  if (st != HAL_OK) {
+    ins->err_st = LSM6DS3TR_FIFO_SET_MODE_ERR;
+    return -1;
+  }
+  return 0;
+}
+
+int lsm6ds3trTimerSet(Lsm6ds3tr *ins, uint8_t dev_read_addr,
+                      uint8_t dev_write_addr, uint8_t mem_addr,
+                      uint8_t mode_set) {
+  uint8_t buf[1] = {0};
 
   return 0;
+}
+
+int lsm6dstrFifoInit(Lsm6ds3tr *ins) {
+  int result = lsm6ds3trFifoWatermarkSet(ins, LSM6DS3TR_READ, LSM6DS3TR_WRITE,
+                                         LSM6DS3TRC_FIFO_CRTL1,
+                                         LSM6DS3TRC_FIFO_CRTL2, 24 * 50);
+  CHECK_RESULT(result);
+
+  result = lsm6ds3trFifoModeSet(ins, LSM6DS3TR_WRITE, LSM6DS3TRC_FIFO_CRTL5,
+                                LSM6DS3TR_STREAM_MODE, LSM6DS3TR_FIFO_833Hz);
+  CHECK_RESULT(result);
+  return 0;
+}
+
+void lsm6ds3trAccGryOutput(Lsm6ds3tr *ins) {
+  uint8_t buf[1] = {0};
+  HAL_StatusTypeDef st =
+      HAL_I2C_Mem_Read(ins->i2c, LSM6DS3TR_READ, LSM6DS3TRC_STATUS_REG,
+                       I2C_MEMADD_SIZE_8BIT, buf, 1, 1);
+  if (st != HAL_OK) {
+    ins->err_st = LSM6DS3TR_STATUS_UPDATE_ERR;
+    return;
+  }
+  /* 0x07: 01:acc 02:gyr 04:temp */
+  if (buf[0] == 0x07) {
+    /* can get value */
+    st = HAL_I2C_Mem_Read_IT(ins->i2c, LSM6DS3TR_READ, LSM6DS3TRC_OUT_TEMP_L,
+                             I2C_MEMADD_SIZE_8BIT, (uint8_t *)&ins->data_buf[0],
+                             14);
+    if (st != HAL_OK)
+      ins->err_st = LSM6DS3TR_STATUS_UPDATE_ERR;
+  } else {
+    SEGGER_RTT_printf(0, "no ready \r\n", RTT_CTRL_TEXT_BRIGHT_BLUE);
+    ins->flag = LSM6DS3TR_FLAG_UNUPDATE;
+
+    /* only test */
+    osDelay(20);
+    lsm6ds3trAccGryOutput(ins);
+    //
+  }
+}
+
+void lsm6ds3trOutputReadCb(Lsm6ds3tr *ins) {
+  ins->temp =
+      (float)((int16_t)(ins->data_buf[1] << 8 | ins->data_buf[0])) / 256.0 +
+      25.0;
+  ins->gyr_x =
+      (float)((int16_t)(ins->data_buf[3] << 8 | ins->data_buf[2])) * 70.00f;
+  ins->gyr_y =
+      (float)((int16_t)(ins->data_buf[5] << 8 | ins->data_buf[4])) * 70.00f;
+  ins->gyr_z =
+      (float)((int16_t)(ins->data_buf[7] << 8 | ins->data_buf[6])) * 70.00f;
+  ins->acc_x =
+      (float)((int16_t)(ins->data_buf[9] << 8 | ins->data_buf[8])) * 0.122f;
+  ins->acc_y =
+      (float)((int16_t)(ins->data_buf[11] << 8 | ins->data_buf[10])) * 0.122f;
+  ins->acc_z =
+      (float)((int16_t)(ins->data_buf[13] << 8 | ins->data_buf[12])) * 0.122f;
+
+  SEGGER_RTT_printf(0,
+                    "%s acc: x:%d y:%d z:%d \n"
+                    " gxy :x:%d y:%d z:%d temp:%d \n",
+                    RTT_CTRL_TEXT_BRIGHT_RED, (int)ins->acc_x, (int)ins->acc_y,
+                    (int)ins->acc_z, (int)ins->gyr_x, (int)ins->gyr_y,
+                    (int)ins->gyr_z, (int)ins->temp);
+
+  ins->flag = LSM6DS3TR_FLAG_UPDATED;
 }
 
 #define Kp 500.0f    // 比例增益支配率收敛到加速度计/磁强计
@@ -344,64 +473,6 @@ void IMUUpdate(float gx, float gy, float gz, float ax, float ay, float az) {
 
   SEGGER_RTT_printf(0, "%s Pitch: %d ,Roll: %d ,Yaw: %d \r\n",
                     RTT_CTRL_TEXT_BRIGHT_RED, (int)Pitch, (int)Roll, (int)Yaw);
-}
-
-void lsm6ds3tr_acc_gry_output(Lsm6ds3tr *ins) {
-  uint8_t buf[1] = {0};
-  HAL_StatusTypeDef st =
-      HAL_I2C_Mem_Read(ins->i2c, LSM6DS3TR_READ, LSM6DS3TRC_STATUS_REG,
-                       I2C_MEMADD_SIZE_8BIT, buf, 1, 1);
-  if (st != HAL_OK) {
-    ins->err_st = LSM6DS3TR_STATUS_UPDATE_ERR;
-    return;
-  }
-  /* 0x07: 01:acc 02:gyr 04:temp */
-  if (buf[0] == 0x07) {
-    /* can get value */
-    st = HAL_I2C_Mem_Read_IT(ins->i2c, LSM6DS3TR_READ, LSM6DS3TRC_OUT_TEMP_L,
-                             I2C_MEMADD_SIZE_8BIT, &ins->data_buf[0], 14);
-    if (st != HAL_OK)
-      ins->err_st = LSM6DS3TR_STATUS_UPDATE_ERR;
-  } else {
-    SEGGER_RTT_printf(0, "no ready \r\n", RTT_CTRL_TEXT_BRIGHT_BLUE);
-    ins->flag = LSM6DS3TR_FLAG_UNUPDATE;
-
-    /* only test */
-    osDelay(20);
-    lsm6ds3tr_acc_gry_output(ins);
-    //
-  }
-}
-
-void lsm6ds3tr_output_read_cb(Lsm6ds3tr *ins) {
-  ins->temp =
-      (float)((int16_t)(ins->data_buf[1] << 8 | ins->data_buf[0])) / 256.0 +
-      25.0;
-  ins->gyr_x =
-      (float)((int16_t)(ins->data_buf[3] << 8 | ins->data_buf[2])) * 70.00f;
-  ins->gyr_y =
-      (float)((int16_t)(ins->data_buf[5] << 8 | ins->data_buf[4])) * 70.00f;
-  ins->gyr_z =
-      (float)((int16_t)(ins->data_buf[7] << 8 | ins->data_buf[6])) * 70.00f;
-  ins->acc_x =
-      (float)((int16_t)(ins->data_buf[9] << 8 | ins->data_buf[8])) * 0.122f;
-  ins->acc_y =
-      (float)((int16_t)(ins->data_buf[11] << 8 | ins->data_buf[10])) * 0.122f;
-  ins->acc_z =
-      (float)((int16_t)(ins->data_buf[13] << 8 | ins->data_buf[12])) * 0.122f;
-
-  SEGGER_RTT_printf(0,
-                    "%s acc: x:%d y:%d z:%d \n"
-                    " gxy :x:%d y:%d z:%d temp:%d \n",
-                    RTT_CTRL_TEXT_BRIGHT_RED, (int)ins->acc_x, (int)ins->acc_y,
-                    (int)ins->acc_z, (int)ins->gyr_x, (int)ins->gyr_y,
-                    (int)ins->gyr_z, (int)ins->temp);
-
-  ins->flag = LSM6DS3TR_FLAG_UPDATED;
-
-  /* only test */
-  lsm6ds3tr_acc_gry_output(ins);
-  //
 }
 
 void test2() {
