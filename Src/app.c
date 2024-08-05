@@ -23,10 +23,8 @@ void lsm6ds3tr_i2c_rx_cmp_cb(__attribute__((unused)) I2C_HandleTypeDef* i2c) {
 }
 
 void CS_I2C1_CB_Init(I2C_HandleTypeDef* i2c) {
-  HAL_I2C_RegisterCallback(i2c, HAL_I2C_MEM_RX_COMPLETE_CB_ID,
-                           lsm6ds3tr_i2c_rx_cmp_cb);
-  HAL_I2C_RegisterCallback(i2c, HAL_I2C_MEM_TX_COMPLETE_CB_ID,
-                           lsm6ds3tr_i2c_rx_cmp_cb);
+  HAL_I2C_RegisterCallback(i2c, HAL_I2C_MEM_RX_COMPLETE_CB_ID, lsm6ds3tr_i2c_rx_cmp_cb);
+  HAL_I2C_RegisterCallback(i2c, HAL_I2C_MEM_TX_COMPLETE_CB_ID, lsm6ds3tr_i2c_rx_cmp_cb);
 }
 
 typedef void (*SigHandler)(void*);
@@ -34,17 +32,21 @@ typedef void (*SigHandler)(void*);
 __NO_RETURN void mainThread(void* arg) {
   lsm6ds3trInit(&lsm6ds3tr, &hi2c1);
   CS_I2C1_CB_Init(lsm6ds3tr.i2c);
+
   if (lsm6ds3trRegInit(&lsm6ds3tr)) {
-    SEGGER_RTT_printf(0, "%s lsm6ds3tr_reg_init err : %d",
-                      RTT_CTRL_TEXT_BRIGHT_BLUE, lsm6ds3tr.err_st);
+    SEGGER_RTT_printf(0, "%s lsm6ds3tr_reg_init err : %d", RTT_CTRL_TEXT_BRIGHT_BLUE, lsm6ds3tr.err_st);
     return;
   }
-  lsm6ds3trAccGryOutput(&lsm6ds3tr);
+  // lsm6ds3trAccGryOutput(&lsm6ds3tr);
 
   osStatus_t st;
   uint8_t sig = 0;
 
   SigHandler sig_handler[2] = {lsm6ds3trOutputReadCb, lsm6ds3trAccGryOutput};
+  osDelay(1000);
+  while (1) {
+    lsm6ds3trFifoResult(&lsm6ds3tr);
+  }
 
   while (1) {
     st = osMessageQueueGet(sig_qid, &sig, 0, 3600000);

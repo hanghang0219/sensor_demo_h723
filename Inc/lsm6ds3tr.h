@@ -11,10 +11,9 @@
 
 /* reg addr */
 #define LSM6DS3TR_ID_ADD 0x0F
-#define LSM6DS3TR_CTRL1_XL 0x10  // acceleration reg
-#define LSM6DS3TR_CTRL2_G 0x11   // gyroscope reg
-#define LSM6DS3TR_CTRL3_C_ADD \
-  0X12  // reset & addr auto increase & bdu update auto
+#define LSM6DS3TR_CTRL1_XL 0x10     // acceleration reg
+#define LSM6DS3TR_CTRL2_G 0x11      // gyroscope reg
+#define LSM6DS3TR_CTRL3_C_ADD 0X12  // reset & addr auto increase & bdu update auto
 #define LSM6DS3TR_CTRL8_XL 0x17
 #define LSM6DS3TR_CTRL7_G 0x16
 #define LSM6DS3TRC_CTRL6_C 0x15
@@ -24,7 +23,7 @@
 #define LSM6DS3TRC_OUTX_L_G 0x22
 #define LSM6DS3TRC_OUT_TEMP_L 0x20
 /* common value */
-#define LSM6DS3TR_CTRL3_C_VALUE 0X84
+#define LSM6DS3TR_CTRL3_C_VALUE 0XC4
 #define LSM6DS3TRC_STATUS_TEMPERATURE 0x04
 #define LSM6DS3TRC_STATUS_GYROSCOPE 0x02
 #define LSM6DS3TRC_STATUS_ACCELEROMETER 0x01
@@ -118,11 +117,13 @@
 // FIFO register
 #define LSM6DS3TRC_FIFO_CRTL1 0x06  // only watermark value
 #define LSM6DS3TRC_FIFO_CRTL2 0x07
+#define LSM6DS3TRC_FIFO_CRTL3 0x08
+#define LSM6DS3TRC_FIFO_CRTL4 0x09
 #define LSM6DS3TRC_FIFO_CRTL5 0x0A
-
-// Timer register
-#define LSM6DS3TR_TIMER_CRTL10 0x19
-#define LSM6DS3TR_TIMER_WAKE_UP_DUR 0x5C
+#define LSM6DS3TRC_FIFO_STATUS1 0x3A
+#define LSM6DS3TRC_FIFO_STATUS2 0x3B
+#define FIFO_DATA_OUT_L 0x3E
+#define FIFO_DATA_OUT_H 0x3F
 
 // FIFO MODE
 #define LSM6DS3TR_BYPASS_MODE 0x00
@@ -143,8 +144,28 @@
 #define LSM6DS3TR_FIFO_833Hz 0x07
 #define LSM6DS3TR_FIFO_1k66Hz 0x08
 #define LSM6DS3TR_FIFO_3k33Hz 0x09
-#define LSM6DS3TR_FIFO_6k66Hz 0x10
+#define LSM6DS3TR_FIFO_6k66Hz 0x0A
 
+// Fifo decimation
+#define LSM6DS3TR_NO_SET_FIFO 0X00
+#define LSM6DS3TR_DEC_FACTOR_NO 0X01
+#define LSM6DS3TR_DEC_FACTOR_2 0X02
+#define LSM6DS3TR_DEC_FACTOR_3 0X03
+#define LSM6DS3TR_DEC_FACTOR_4 0X04
+#define LSM6DS3TR_DEC_FACTOR_8 0X05
+#define LSM6DS3TR_DEC_FACTOR_16 0X06
+#define LSM6DS3TR_DEC_FACTOR_32 0X07
+
+// Timer register
+#define LSM6DS3TR_TIMER_CRTL10 0x19
+#define LSM6DS3TR_TIMER_WAKE_UP_DUR 0x5C
+
+// Timer en
+#define LSM6DS3TR_TIMER_EN 0x20
+#define LSM6DS3TR_FIFO_TIMER_EN 0x80
+#define LSM6DS3TR_TIMER_HR_25US 0X10
+
+// Timer
 typedef enum {
   LSM6DS3TR_OK,
   LSM6DS3TR_ID_ERR,
@@ -158,10 +179,39 @@ typedef enum {
   LSM6DS3TR_STATUS_UPDATE_ERR,
   LSM6DS3TR_FIFO_SET_WATERMARK_ERR,
   LSM6DS3TR_FIFO_SET_MODE_ERR,
+  LSM6DS3TR_TIMER_SET_MODE_ERR,
+  LSM6DS3TR_FIFO_SET_TIMER_ERR,
+  LSM6DS3TR_WAKE_UP_DUR_ERR,
+  LSM6DS3TR_DEC_THIRD_FOURTH_FIFO_ERR,
+  LSM6DS3TR_DEC_XL_GYR_FIFO_ERR,
+  LSM6DS3TR_ACCESS_REG_STATUS2_ERR,
+  LSM6DS3TR_ACCESS_REG_STATUS1_ERR,
   LSM6DS3TR_TX_ERR,
   LSM6DS3TR_RX_ERR,
   LSM6DS3TR_ERR
 } Lsm6ds3trErr;
+
+typedef struct {
+  uint8_t read;
+  uint8_t write;
+} Lsm6ds3trReg;
+
+typedef struct {
+  float acc_x;
+  float acc_y;
+  float acc_z;
+  float gyr_x;
+  float gyr_y;
+  float gyr_z;
+} Lsm6ds3trData;
+
+#define LSM6DS3TR_FIFO_EMPTY 0x00
+#define LSM6DS3TR_FIFO_FULL 0x01
+#define LSM6DS3TR_FIFO_NO_FULL_NO_EMPTY 0x02
+
+typedef struct {
+  uint8_t st;
+} Lsm6ds3trFifo;
 
 #define LSM6DS3TR_FLAG_UPDATED 01
 #define LSM6DS3TR_FLAG_UNUPDATE 02
@@ -169,13 +219,10 @@ typedef enum {
 typedef struct {
   I2C_HandleTypeDef *i2c;
   Lsm6ds3trErr err_st;
-  char data_buf[14];
-  float acc_x;
-  float acc_y;
-  float acc_z;
-  float gyr_x;
-  float gyr_y;
-  float gyr_z;
+  Lsm6ds3trReg reg;
+  Lsm6ds3trData data;
+  Lsm6ds3trFifo fifo;
+  char data_buf[14];  //    direct access to registers without fifo
   int16_t temp;
   uint8_t flag;
 } Lsm6ds3tr;
@@ -184,5 +231,6 @@ int lsm6ds3trRegInit(Lsm6ds3tr *ins);
 void lsm6ds3trInit(Lsm6ds3tr *ins, I2C_HandleTypeDef *i2c);
 void lsm6ds3trOutputReadCb(Lsm6ds3tr *ins);
 void lsm6ds3trAccGryOutput(Lsm6ds3tr *ins);
+int lsm6ds3trFifoResult(Lsm6ds3tr *ins);
 void test2();
 #endif  //LSM6DS3TR_H
