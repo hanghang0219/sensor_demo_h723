@@ -38,26 +38,25 @@ __NO_RETURN void mainThread(void* arg) {
     return;
   }
   // lsm6ds3trAccGryOutput(&lsm6ds3tr);
-
-  osStatus_t st;
-  uint8_t sig = 0;
-
-  SigHandler sig_handler[2] = {lsm6ds3trOutputReadCb, lsm6ds3trAccGryOutput};
+  // osStatus_t st;
+  // uint8_t sig = 0;
+  // SigHandler sig_handler[2] = {lsm6ds3trOutputReadCb, lsm6ds3trAccGryOutput};
   osDelay(1000);
   while (1) {
     lsm6ds3trFifoResult(&lsm6ds3tr);
+    osDelay(1);
   }
 
-  while (1) {
-    st = osMessageQueueGet(sig_qid, &sig, 0, 3600000);
-    if (st == osOK) {
-      sig_handler[sig](&lsm6ds3tr);
-      if (sig == 0) {
-        uint8_t signal = 1;
-        osMessageQueuePut(sig_qid, &signal, 0, 10);
-      }
-    }
-  }
+  // while (1) {
+  //   st = osMessageQueueGet(sig_qid, &sig, 0, 3600000);
+  //   if (st == osOK) {
+  //     sig_handler[sig](&lsm6ds3tr);
+  //     if (sig == 0) {
+  //       uint8_t signal = 1;
+  //       osMessageQueuePut(sig_qid, &signal, 0, 10);
+  //     }
+  //   }
+  // }
 }
 
 __NO_RETURN void threadThread(void* arg) {
