@@ -1,149 +1,128 @@
-// //
-// // Created by hanghang on 24-7-30.
-// //
 //
-// #include "lsm6ds3tr_motionFX.h"
+// Created by hanghang on 24-7-30.
 //
-// #include <stdio.h>
-// #include <stdlib.h>
-// #include <string.h>
-// #include "motion_fx.h"
-//
-// #define DELATE_TIME ((double)(0.0022))  //0.0025
-//
-// static int16_t data_raw_acceleration[3];
-// static int16_t data_raw_angular_rate[3];
-//
-// static uint8_t mfxstate_6x[FX_STATE_SIZE];
-// static float Quaternions_data[4];
-//
-// typedef struct {
-//   Accelerometer acc;
-//   Gyroscope gyr;
-//   float acceleration[3];
-//   float angular_rate[3];
-//   MFX_output_t mfx_6x;
-// } sensor_hub_data_t;
-//
-// sensor_hub_data_t sensor_hub_data;
-//
-// void MFX_Arithmetic_Init(void);
-//
-// void lsm6dso_init(void) {
-//   MFX_Arithmetic_Init();
-// }
-//
-// int ii = 0;
-//
-// void lsm6dso_motion_fx_determin(float acc_x, float acc_y, float acc_z,
-//                                 float gyr_x, float gyr_y, float gyr_z,
-//                                 uint32_t deltatime_1, uint32_t deltatime_2) {
-//
-//   sensor_hub_data.acceleration[0] = acc_x;
-//   sensor_hub_data.acceleration[1] = acc_y;
-//   sensor_hub_data.acceleration[2] = acc_z;
-//
-//   sensor_hub_data.angular_rate[0] = gyr_x;
-//   sensor_hub_data.angular_rate[1] = gyr_y;
-//   sensor_hub_data.angular_rate[2] = gyr_z;
-//
-//   /*----------------------------------------------------------------------------------
-//
-//
-// 		----------------------------------------------------------------------------------*/
-//   MFX_input_t mfx_data_in;
-//
-//   mfx_data_in.acc[0] = sensor_hub_data.acceleration[0] * FROM_MG_TO_G;
-//   mfx_data_in.acc[1] = sensor_hub_data.acceleration[1] * FROM_MG_TO_G;
-//   mfx_data_in.acc[2] = sensor_hub_data.acceleration[2] * FROM_MG_TO_G;
-//
-//   mfx_data_in.gyro[0] = sensor_hub_data.angular_rate[0] * FROM_MDPS_TO_DPS;
-//   mfx_data_in.gyro[1] = sensor_hub_data.angular_rate[1] * FROM_MDPS_TO_DPS;
-//   mfx_data_in.gyro[2] = sensor_hub_data.angular_rate[2] * FROM_MDPS_TO_DPS;
-//
-//   mfx_data_in.mag[0] = 0;
-//   mfx_data_in.mag[1] = 0;
-//   mfx_data_in.mag[2] = 0;
-//
-//   //	printf("Acceleration [mg]:\t%4.2f \t%4.2f \t%4.2f\r\n",mfx_data_in.acc[0],
-//   //																		mfx_data_in.acc[1], mfx_data_in.acc[2]);
-//
-//   //		float delta_time = DELATE_TIME;
-//   float delta_time[1];
-//   if (deltatime_2 > deltatime_1) {
-//     delta_time[0] =
-//         (float)((double)(deltatime_2 - deltatime_1) * 25.0f / 1000000);
-//     //		printf("d=%f\n",delta_time[0]);
-//
-//     MotionFX_propagate(mfxstate_6x, &sensor_hub_data.mfx_6x, &mfx_data_in,
-//                        delta_time);
-//
-//     MotionFX_update(mfxstate_6x, &sensor_hub_data.mfx_6x, &mfx_data_in,
-//                     delta_time, NULL);
-//   } else if (deltatime_1 > deltatime_2) {
-//     delta_time[0] = (float)((double)(0xffffffff - deltatime_2 + deltatime_1) *
-//                             25.0f / 1000000);
-//
-//     MotionFX_propagate(mfxstate_6x, &sensor_hub_data.mfx_6x, &mfx_data_in,
-//                        delta_time);
-//
-//     MotionFX_update(mfxstate_6x, &sensor_hub_data.mfx_6x, &mfx_data_in,
-//                     delta_time, NULL);
-//   } else if (deltatime_1 == deltatime_2) {
-//     delta_time[0] = 0.0f;
-//   }
-//
-//   //	MotionFX_propagate(mfxstate_6x, &sensor_hub_data.mfx_6x, &mfx_data_in, &delta_time);
-//
-//   //	MotionFX_update(mfxstate_6x, &sensor_hub_data.mfx_6x, &mfx_data_in, &delta_time, NULL);
-//
-//   //	Quaternions_data[0] = sensor_hub_data.mfx_6x.quaternion[0];
-//   //	Quaternions_data[1] = sensor_hub_data.mfx_6x.quaternion[1];
-//   //	Quaternions_data[2] = sensor_hub_data.mfx_6x.quaternion[2];
-//   //	Quaternions_data[3] = sensor_hub_data.mfx_6x.quaternion[3];
-//
-//   //	printf("%f, %f, %f, %f \n",Quaternions_data[3],\
-// 						Quaternions_data[1],Quaternions_data[2],Quaternions_data[0]);
-//   if (ii == 10) {
-//     ii = 0;
-//     printf("\n%f, %f, %f", sensor_hub_data.mfx_6x.rotation[0],
-//            sensor_hub_data.mfx_6x.rotation[1],
-//            sensor_hub_data.mfx_6x.rotation[2]);
-//   } else
-//     ii++;
-// }
-//
-// void MFX_Arithmetic_Init(void) {
-//   MFX_knobs_t iKnobs;
-//   MFX_knobs_t *ipKnobs = &iKnobs;
-//
-//   MotionFX_initialize((MFXState_t *)mfxstate_6x);
-//
-//   MotionFX_getKnobs(mfxstate_6x, ipKnobs);
-//
-//   ipKnobs->gbias_acc_th_sc = GBIAS_ACC_TH_SC_6X;
-//   ipKnobs->gbias_gyro_th_sc = GBIAS_ACC_TH_SC_6X;
-//   ipKnobs->gbias_mag_th_sc = GBIAS_ACC_TH_SC_6X;
-//
-//   ipKnobs->acc_orientation[0] = ACC_ORIENTATION_X;
-//   ipKnobs->acc_orientation[1] = ACC_ORIENTATION_Y;
-//   ipKnobs->acc_orientation[2] = ACC_ORIENTATION_Z;
-//
-//   ipKnobs->gyro_orientation[0] = GYR_ORIENTATION_X;
-//   ipKnobs->gyro_orientation[1] = GYR_ORIENTATION_Y;
-//   ipKnobs->gyro_orientation[2] = GYR_ORIENTATION_Z;
-//
-//   ipKnobs->mag_orientation[0] = MAG_ORIENTATION_X;
-//   ipKnobs->mag_orientation[1] = MAG_ORIENTATION_Y;
-//   ipKnobs->mag_orientation[2] = MAG_ORIENTATION_Z;
-//
-//   ipKnobs->output_type = MFX_ENGINE_OUTPUT_ENU;
-//   ipKnobs->LMode = 1;
-//   ipKnobs->modx = 1;
-//
-//   MotionFX_setKnobs(mfxstate_6x, ipKnobs);
-//
-//   MotionFX_enable_6X(mfxstate_6x, MFX_ENGINE_ENABLE);
-//
-//   MotionFX_enable_9X(mfxstate_6x, MFX_ENGINE_DISABLE);
-// }
+
+#include "lsm6ds3tr_motionFX.h"
+#include <SEGGER_RTT.h>
+#include <usart.h>
+
+#include "motion_fx.h"
+static uint8_t mfxstate_6x[FX_STATE_SIZE];
+
+void lsm6ds3trMotionFxInit(void) {
+  MFX_knobs_t knobs;
+
+  MotionFX_initialize((MFXState_t *)mfxstate_6x);
+  MotionFX_getKnobs(mfxstate_6x, &knobs);
+
+  knobs.gbias_acc_th_sc = GBIAS_ACC_TH_SC_6X;
+  knobs.gbias_gyro_th_sc = GBIAS_GYRO_TH_SC_6X;
+  knobs.gbias_mag_th_sc = GBIAS_MAG_TH_SC_6X;
+
+  knobs.acc_orientation[0] = ACC_ORIENTATION_X;
+  knobs.acc_orientation[1] = ACC_ORIENTATION_Y;
+  knobs.acc_orientation[2] = ACC_ORIENTATION_Z;
+
+  knobs.gyro_orientation[0] = GYR_ORIENTATION_X;
+  knobs.gyro_orientation[1] = GYR_ORIENTATION_Y;
+  knobs.gyro_orientation[2] = GYR_ORIENTATION_Z;
+
+  knobs.mag_orientation[0] = MAG_ORIENTATION_X;
+  knobs.mag_orientation[1] = MAG_ORIENTATION_Y;
+  knobs.mag_orientation[2] = MAG_ORIENTATION_Z;
+
+  knobs.output_type = MFX_ENGINE_OUTPUT_ENU;
+  knobs.LMode = 1;
+  knobs.modx = 1;
+
+  MotionFX_setKnobs(mfxstate_6x, &knobs);
+  MotionFX_enable_6X(mfxstate_6x, MFX_ENGINE_ENABLE);
+  MotionFX_enable_9X(mfxstate_6x, MFX_ENGINE_DISABLE);
+}
+
+typedef struct {
+  float acceleration[3];
+  float angular_rate[3];
+  MFX_output_t mfx_6x;
+} Sensor;
+
+void printfData(Sensor *ins) {
+  uint8_t data[15];
+  data[0] = 0xAB;
+  data[1] = 0xDC;
+  data[2] = 0xFE;
+  data[3] = 0x03;
+  data[4] = 0x07;
+  data[5] = 0;
+  data[7] = (int16_t)(ins->mfx_6x.rotation[2] * 100) >> 8;
+  data[6] = (int16_t)(ins->mfx_6x.rotation[2] * 100);
+  data[9] = (int16_t)(ins->mfx_6x.rotation[1] * 100) >> 8;
+  data[8] = (int16_t)(ins->mfx_6x.rotation[1] * 100);
+  data[11] = (int16_t)(ins->mfx_6x.rotation[0] * 100) >> 8;
+  data[10] = (int16_t)(ins->mfx_6x.rotation[0] * 100);
+  data[12] = 0;
+
+  uint8_t sumcheck = 0;
+  uint8_t addcheck = 0;
+  for (uint16_t i = 0; i < 13; i++) {
+    sumcheck += data[i];   //从帧头开始，对每一字节进行求和，直到 DATA 区结束
+    addcheck += sumcheck;  //每一字节的求和操作，进行一次 sumcheck 的累加
+  }
+  data[13] = sumcheck;
+  data[14] = addcheck;
+  HAL_StatusTypeDef st = HAL_UART_Transmit(&huart1, data, 15, 10);
+  if (st != HAL_OK)
+    SEGGER_RTT_printf(0, "%s Uart transmit_it err %s\n", RTT_CTRL_TEXT_BRIGHT_BLUE, RTT_CTRL_RESET);
+}
+
+void lsm6ds3trMotionFxDetermin(Lsm6ds3tr *ins) {
+  static uint8_t num = 0;
+  Sensor sensor;
+
+  sensor.acceleration[0] = ins->data.acc_x;
+  sensor.acceleration[1] = ins->data.acc_y;
+  sensor.acceleration[2] = ins->data.acc_z;
+
+  sensor.angular_rate[0] = ins->data.gyr_x;
+  sensor.angular_rate[1] = ins->data.gyr_y;
+  sensor.angular_rate[2] = ins->data.gyr_z;
+
+  MFX_input_t mfx_data_in;
+
+  mfx_data_in.acc[0] = sensor.acceleration[0] * FROM_MG_TO_G;
+  mfx_data_in.acc[1] = sensor.acceleration[1] * FROM_MG_TO_G;
+  mfx_data_in.acc[2] = sensor.acceleration[2] * FROM_MG_TO_G;
+
+  mfx_data_in.gyro[0] = sensor.angular_rate[0] * FROM_MDPS_TO_DPS;
+  mfx_data_in.gyro[1] = sensor.angular_rate[1] * FROM_MDPS_TO_DPS;
+  mfx_data_in.gyro[2] = sensor.angular_rate[2] * FROM_MDPS_TO_DPS;
+
+  mfx_data_in.mag[0] = 0;
+  mfx_data_in.mag[1] = 0;
+  mfx_data_in.mag[2] = 0;
+
+  float delta_time[1];
+  if (ins->data.timestamp_2 > ins->data.timestamp_1) {
+    delta_time[0] = (float)((double)(ins->data.timestamp_2 - ins->data.timestamp_1) * 25.0f / 1000000);
+
+    MotionFX_propagate(mfxstate_6x, &sensor.mfx_6x, &mfx_data_in, delta_time);
+    MotionFX_update(mfxstate_6x, &sensor.mfx_6x, &mfx_data_in, delta_time, NULL);
+  } else if (ins->data.timestamp_1 > ins->data.timestamp_2) {
+    delta_time[0] = (float)((double)(0xffffffff - ins->data.timestamp_2 + ins->data.timestamp_1) * 25.0f / 1000000);
+
+    MotionFX_propagate(mfxstate_6x, &sensor.mfx_6x, &mfx_data_in, delta_time);
+    MotionFX_update(mfxstate_6x, &sensor.mfx_6x, &mfx_data_in, delta_time, NULL);
+
+  } else if (ins->data.timestamp_1 == ins->data.timestamp_2) {
+    delta_time[0] = 0.0f;
+  }
+  num++;
+  printfData(&sensor);
+  if (num == 10) {
+    SEGGER_RTT_printf(0, "%smotionFx : %d  %d  %d   %d --- %d%s \n", RTT_CTRL_TEXT_BRIGHT_BLUE,
+                      (int)sensor.mfx_6x.rotation[0], (int)sensor.mfx_6x.rotation[1], (int)sensor.mfx_6x.rotation[2],
+                      ins->data.timestamp_2, ins->data.timestamp_1, RTT_CTRL_RESET);
+
+    num = 0;
+  }
+}

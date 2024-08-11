@@ -1,6 +1,6 @@
 TARGET= h723_ssr
 DEBUG = 1
-OPT = -Og
+OPT = -O0
 BUILD_DIR = build
 
 LIB_ROOT = ../..
@@ -101,7 +101,7 @@ LDSCRIPT = $(DEV_ENV)/STM32H723ZGTx_FLASH.ld
 
 # libraries
 LIBS = -lc -lm -lnosys
-LIBDIR =
+LIBDIR = $(DEV_ENV)/Middlewares/ST/STM32_MotionFX_Library/Lib/*.a
 LDFLAGS = $(MCU) -specs=nano.specs -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--cref -Wl,--gc-sections
 
 # default action: build all

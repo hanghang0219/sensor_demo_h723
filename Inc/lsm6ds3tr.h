@@ -6,6 +6,13 @@
 #define LSM6DS3TR_H
 
 #include "i2c.h"
+
+#define CHECK_RESULT(result) \
+  do {                       \
+    if (result != 0)         \
+      return result;         \
+  } while (0)
+
 #define LSM6DS3TR_READ 0xD5
 #define LSM6DS3TR_WRITE 0xD4
 
@@ -165,7 +172,13 @@
 #define LSM6DS3TR_FIFO_TIMER_EN 0x80
 #define LSM6DS3TR_TIMER_HR_25US 0X10
 
-// Timer
+// Int register
+#define LSM6DS3TR_INT1_CTRL 0x0d
+#define LSM6DS3TR_INT2_CTRL 0x0e
+
+// INT1 value
+#define LSM6DS3TR_INT1_FULL_FLAG 0x20
+
 typedef enum {
   LSM6DS3TR_OK,
   LSM6DS3TR_ID_ERR,
@@ -187,6 +200,7 @@ typedef enum {
   LSM6DS3TR_ACCESS_REG_FIFO_STATUS2_ERR,
   LSM6DS3TR_ACCESS_REG_FIFO_STATUS1_ERR,
   LSM6DS3TR_ACCESS_REG_FIFO_DATA_OUT_ERR,
+  LSM6DS3TR_INT1_SET_FIFO_FLAG_ERR,
   LSM6DS3TR_TX_ERR,
   LSM6DS3TR_RX_ERR,
   LSM6DS3TR_ERR
@@ -205,17 +219,26 @@ typedef struct {
   float gyr_y;
   float gyr_z;
   uint32_t timestamp;
+  uint32_t timestamp_1;
+  uint32_t timestamp_2;
 } Lsm6ds3trData;
 
+// Fifo status
 #define LSM6DS3TR_FIFO_EMPTY 0x00
 #define LSM6DS3TR_FIFO_FULL 0x01
+#define LSM6DS3TR_FIFO_WATERMARK 24 * 40
 
 typedef struct {
   uint8_t st;
 } Lsm6ds3trFifo;
 
+// Check lsm update
 #define LSM6DS3TR_FLAG_UPDATED 01
 #define LSM6DS3TR_FLAG_UNUPDATE 02
+
+// Read cb sig
+#define LSM6DS3TR_READ_FLAG_FIFO_STATUS2 0x01
+#define LSM6DS3TR_READ_FLAG_GET_FIFO_DATA 0x02
 
 typedef struct {
   I2C_HandleTypeDef *i2c;
@@ -223,15 +246,26 @@ typedef struct {
   Lsm6ds3trReg reg;
   Lsm6ds3trData data;
   Lsm6ds3trFifo fifo;
-  char data_buf[14];  //    direct access to registers without fifo
   int16_t temp;
-  uint8_t flag;
+  uint8_t read_sig_flag;  // various tx cb
+  uint8_t write_sig_flag;
+  uint8_t reg_read_buf[1];
+  uint8_t fifo_data_get_buf[24];
+  char data_buf[14];  // direct access to registers without fifo
+  uint8_t update_flag;
 } Lsm6ds3tr;
 
-int lsm6ds3trRegInit(Lsm6ds3tr *ins);
 void lsm6ds3trInit(Lsm6ds3tr *ins, I2C_HandleTypeDef *i2c);
+int lsm6ds3trRegInit(Lsm6ds3tr *ins);
+
 void lsm6ds3trOutputReadCb(Lsm6ds3tr *ins);
 void lsm6ds3trAccGryOutput(Lsm6ds3tr *ins);
 int lsm6ds3trFifoResult(Lsm6ds3tr *ins);
-void test2();
+
+void lsm6ds3trFifoClear(Lsm6ds3tr *ins);
+int lsm6ds3trFifoStatus2It(Lsm6ds3tr *ins);
+int lsm6dstrFifoFlow(Lsm6ds3tr *ins);
+int lsm6ds3trFifoInt1Full(Lsm6ds3tr *ins, uint8_t dev_read_addr, uint8_t dev_write_addr, uint8_t mem_addr,
+                          uint8_t int1_full_flag);
+
 #endif  //LSM6DS3TR_H

@@ -22,7 +22,7 @@ void lsm6ds3trInit(Lsm6ds3tr *ins, I2C_HandleTypeDef *i2c) {
   ins->reg = lsm6ds3tr_reg;
   ins->data = lsm6ds3tr_data;
   ins->fifo = lsm6ds3tr_fifo;
-  ins->flag = LSM6DS3TR_FLAG_UNUPDATE;
+  ins->update_flag = LSM6DS3TR_FLAG_UNUPDATE;
 }
 
 /* 1.identify id */
@@ -206,12 +206,6 @@ int lsm6ds3trReg4Param(Lsm6ds3tr *ins, uint8_t dev_read_addr, uint8_t dev_write_
   return 0;
 }
 
-#define CHECK_RESULT(result) \
-  do {                       \
-    if (result != 0)         \
-      return result;         \
-  } while (0)
-
 int lsm6ds3trRegInit(Lsm6ds3tr *ins) {
 
   int result = lsm6dstrWhoIAm(ins, LSM6DS3TR_READ, LSM6DS3TR_ID_ADD);
@@ -220,28 +214,28 @@ int lsm6ds3trRegInit(Lsm6ds3tr *ins) {
   result = lsm6dstrResetDevice(ins, LSM6DS3TR_READ, LSM6DS3TR_WRITE, LSM6DS3TR_CTRL3_C_ADD, LSM6DS3TR_CTRL3_C_VALUE);
   CHECK_RESULT(result);
 
-  result = lsm6ds3trAccParam(ins, LSM6DS3TR_READ, LSM6DS3TR_WRITE, LSM6DS3TR_CTRL1_XL, LSM6DS3TRC_ACC_RATE_26HZ,
+  result = lsm6ds3trAccParam(ins, LSM6DS3TR_READ, LSM6DS3TR_WRITE, LSM6DS3TR_CTRL1_XL, LSM6DS3TRC_ACC_RATE_416HZ,
                              LSM6DS3TRC_ACC_FSXL_4G);
   CHECK_RESULT(result);
 
-  result = lsm6ds3trGyrParam(ins, LSM6DS3TR_READ, LSM6DS3TR_WRITE, LSM6DS3TR_CTRL2_G, LSM6DS3TRC_GYR_RATE_26HZ,
+  result = lsm6ds3trGyrParam(ins, LSM6DS3TR_READ, LSM6DS3TR_WRITE, LSM6DS3TR_CTRL2_G, LSM6DS3TRC_GYR_RATE_416HZ,
                              LSM6DS3TRC_GYR_FSG_2000);
   CHECK_RESULT(result);
 
-  result = lsm6ds3trAccBandwidth(ins, LSM6DS3TR_READ, LSM6DS3TR_WRITE, LSM6DS3TR_CTRL1_XL, LSM6DS3TR_CTRL8_XL,
-                                 LSM6DS3TRC_ACC_BW0XL_400HZ, LSM6DS3TRC_ACC_LOW_PASS_ODR_100);
-  CHECK_RESULT(result);
-
-  result = lsm6ds3trReg7Param(ins, LSM6DS3TR_READ, LSM6DS3TR_WRITE, LSM6DS3TR_CTRL7_G, LSM6DS3TRC_CTRL7_G_HP_EN_ENABLE,
-                              LSM6DS3TRC_CTRL7_G_HPM_260MHZ);
-  CHECK_RESULT(result);
-
-  result = lsm6ds3trReg6Param(ins, LSM6DS3TR_READ, LSM6DS3TR_WRITE, LSM6DS3TRC_CTRL6_C, LSM6DS3TRC_CTRL6_C_FTYPE_1);
-  CHECK_RESULT(result);
-
-  result =
-      lsm6ds3trReg4Param(ins, LSM6DS3TR_READ, LSM6DS3TR_WRITE, LSM6DS3TRC_CTRL4_C, LSM6DS3TRC_CTRL4_LPF1_SELG_ENABLE);
-  CHECK_RESULT(result);
+  // result = lsm6ds3trAccBandwidth(ins, LSM6DS3TR_READ, LSM6DS3TR_WRITE, LSM6DS3TR_CTRL1_XL, LSM6DS3TR_CTRL8_XL,
+  //                                LSM6DS3TRC_ACC_BW0XL_400HZ, LSM6DS3TRC_ACC_LOW_PASS_ODR_100);
+  // CHECK_RESULT(result);
+  //
+  // result = lsm6ds3trReg7Param(ins, LSM6DS3TR_READ, LSM6DS3TR_WRITE, LSM6DS3TR_CTRL7_G, LSM6DS3TRC_CTRL7_G_HP_EN_ENABLE,
+  //                             LSM6DS3TRC_CTRL7_G_HPM_260MHZ);
+  // CHECK_RESULT(result);
+  //
+  // result = lsm6ds3trReg6Param(ins, LSM6DS3TR_READ, LSM6DS3TR_WRITE, LSM6DS3TRC_CTRL6_C, LSM6DS3TRC_CTRL6_C_FTYPE_1);
+  // CHECK_RESULT(result);
+  //
+  // result =
+  //     lsm6ds3trReg4Param(ins, LSM6DS3TR_READ, LSM6DS3TR_WRITE, LSM6DS3TRC_CTRL4_C, LSM6DS3TRC_CTRL4_LPF1_SELG_ENABLE);
+  // CHECK_RESULT(result);
 
   result = lsm6dstrFifoInit(ins);
   CHECK_RESULT(result);
@@ -398,6 +392,29 @@ int lsm6ds3trFifoDecXlGyr(Lsm6ds3tr *ins, uint8_t dev_read_addr, uint8_t dev_wri
   return 0;
 }
 
+/**
+  * @param dev_read_addr  LSM6DS3TR_READ
+  * @param dev_write_addr LSM6DS3TR_WRITE
+  * @param mem_addr LSM6DS3TR_INT1_CTRL
+  * @param int1_full_flag LSM6DS3TR_INT1_FULL_FLAG
+  */
+int lsm6ds3trFifoInt1Full(Lsm6ds3tr *ins, uint8_t dev_read_addr, uint8_t dev_write_addr, uint8_t mem_addr,
+                          uint8_t int1_full_flag) {
+
+  uint8_t buf[1] = {0};
+  HAL_StatusTypeDef st = HAL_I2C_Mem_Read(ins->i2c, dev_read_addr, mem_addr, I2C_MEMADD_SIZE_8BIT, buf, 1, 1);
+  buf[0] = int1_full_flag;
+  st |= HAL_I2C_Mem_Write(ins->i2c, dev_write_addr, mem_addr, I2C_MEMADD_SIZE_8BIT, buf, 1, 1);
+  if (st != HAL_OK) {
+    ins->err_st = LSM6DS3TR_INT1_SET_FIFO_FLAG_ERR;
+    return -1;
+  }
+
+  return 0;
+}
+
+/*------------------------------------------------- get fifo status and value  ----------------------------------------------------------------*/
+
 // FIFO result
 // The reg can check if the queue is full
 int lsm6ds3trFifoStatus2(Lsm6ds3tr *ins) {
@@ -432,87 +449,230 @@ int lsm6ds3trFifoStatus1(Lsm6ds3tr *ins) {
   return 0;
 }
 
-// every fifo have 6 bytes info , there are 4 fifo : 4*26
+// every fifo have 6 bytes info , there are 4 fifo -> 4 * 6
 // fifo 1 : gyr
 // fifo 2 : acc
 // fifo 3 : unused sensor
 // fifo 4 : time
+
+uint8_t data[LSM6DS3TR_FIFO_WATERMARK] = {0};
+
 int lsm6ds3trGetFifoInfo(Lsm6ds3tr *ins) {
-  uint8_t data[24] = {0};
-  HAL_StatusTypeDef st = HAL_I2C_Mem_Read(ins->i2c, ins->reg.read, FIFO_DATA_OUT_L, I2C_MEMADD_SIZE_8BIT, data, 24, 10);
+  HAL_StatusTypeDef st = HAL_I2C_Mem_Read(ins->i2c, ins->reg.read, FIFO_DATA_OUT_L, I2C_MEMADD_SIZE_8BIT, data,
+                                          LSM6DS3TR_FIFO_WATERMARK, 1000);
   if (st != HAL_OK) {
     ins->err_st = LSM6DS3TR_ACCESS_REG_FIFO_DATA_OUT_ERR;
     return -1;
   }
-  ins->data.gyr_x = (float)((int16_t)(data[1] << 8 | data[0])) * 70.00f;
-  ins->data.gyr_y = (float)((int16_t)(data[3] << 8 | data[2])) * 70.00f;
-  ins->data.gyr_z = (float)((int16_t)(data[5] << 8 | data[4])) * 70.00f;
-  ins->data.acc_x = (float)((int16_t)(data[7] << 8 | data[6])) * 0.122f;
-  ins->data.acc_y = (float)((int16_t)(data[9] << 8 | data[8])) * 0.122f;
-  ins->data.acc_z = (float)((int16_t)(data[11] << 8 | data[10])) * 0.122f;
-  ins->data.timestamp = data[18] << 8 | data[19] << 16 | data[21];
 
   return 0;
 }
 
+// reset fifo
 void lsm6ds3trFifoClear(Lsm6ds3tr *ins) {
-  lsm6ds3trFifoStatus2(ins);
-  if (ins->fifo.st != LSM6DS3TR_FIFO_EMPTY) {
-    uint8_t num = 0;
-    while (ins->fifo.st != LSM6DS3TR_FIFO_EMPTY) {
-      num++;
-      lsm6ds3trGetFifoInfo(ins);
-      lsm6ds3trFifoStatus2(ins);
-    }
-    SEGGER_RTT_printf(0, "%s QUE already clear :%d\n %s", RTT_CTRL_TEXT_BRIGHT_GREEN, num, RTT_CTRL_RESET);
-    memset(&ins->data, 0, sizeof(Lsm6ds3trData));
-  } else
-    SEGGER_RTT_printf(0, "%s QUE dont clear \n %s", RTT_CTRL_TEXT_BRIGHT_GREEN, RTT_CTRL_RESET);
+  lsm6ds3trFifoModeSet(ins, LSM6DS3TR_WRITE, LSM6DS3TRC_FIFO_CRTL5, LSM6DS3TR_BYPASS_MODE, LSM6DS3TR_FIFO_416Hz);
+  lsm6ds3trFifoModeSet(ins, LSM6DS3TR_WRITE, LSM6DS3TRC_FIFO_CRTL5, LSM6DS3TR_STREAM_MODE, LSM6DS3TR_FIFO_416Hz);
 }
+
+// if (ins->fifo.st != LSM6DS3TR_FIFO_EMPTY) {
+//   uint8_t num = 0;
+//   while (ins->fifo.st != LSM6DS3TR_FIFO_EMPTY) {
+//     num++;
+//     HAL_I2C_Mem_Read(ins->i2c, ins->reg.read, FIFO_DATA_OUT_L, I2C_MEMADD_SIZE_8BIT, data, 24, 1000);
+//     lsm6ds3trFifoStatus2(ins);
+//   }
+//   SEGGER_RTT_printf(0, "%sQUE already clear :%d\n %s", RTT_CTRL_TEXT_BRIGHT_GREEN, num, RTT_CTRL_RESET);
+//   memset(&ins->data, 0, sizeof(Lsm6ds3trData));
+// } else
+//   SEGGER_RTT_printf(0, "%sQUE dont clear \n %s", RTT_CTRL_TEXT_BRIGHT_GREEN, RTT_CTRL_RESET);
+// }
 
 int lsm6ds3trFifoResult(Lsm6ds3tr *ins) {
 
   /* check watermark full */
   int result = lsm6ds3trFifoStatus2(ins);
-
   CHECK_RESULT(result);
+
   if (ins->fifo.st == LSM6DS3TR_FIFO_FULL) {
     uint8_t num = 0;
-    uint32_t old_record = 0;
+    SEGGER_RTT_printf(0, "%sQUE IS FULL\n%s", RTT_CTRL_TEXT_BRIGHT_GREEN, RTT_CTRL_RESET);
 
-    SEGGER_RTT_printf(0, "%s QUE IS FULL\n %s", RTT_CTRL_TEXT_BRIGHT_GREEN, RTT_CTRL_RESET);
-    while (ins->fifo.st != LSM6DS3TR_FIFO_EMPTY) {
-      result = lsm6ds3trGetFifoInfo(ins);
-      result |= lsm6ds3trFifoStatus2(ins);
-      CHECK_RESULT(result);
+    result = lsm6ds3trGetFifoInfo(ins);
+    CHECK_RESULT(result);
 
-      if (num == 0)
-        old_record = ins->data.timestamp;
+    for (int i = 0; i < LSM6DS3TR_FIFO_WATERMARK / 24; i++) {
       num++;
-      SEGGER_RTT_printf(0,
-                        "%sAcc:x:%d y:%d z:%d%s \n"
-                        "%sGxy:x:%d y:%d z:%d%s \n"
-                        "%stimestamp: %d \n%s",
-                        RTT_CTRL_TEXT_BRIGHT_RED, (int)ins->data.acc_x, (int)ins->data.acc_y, (int)ins->data.acc_z,
-                        RTT_CTRL_RESET, RTT_CTRL_TEXT_GREEN, (int)ins->data.gyr_x, (int)ins->data.gyr_y,
-                        (int)ins->data.gyr_z, RTT_CTRL_RESET, RTT_CTRL_TEXT_YELLOW, ins->data.timestamp,
-                        RTT_CTRL_RESET);
+      int index = i * 24;
+      ins->data.gyr_x = (float)((int16_t)(data[index + 1] << 8 | data[index + 0])) * 70.00f;
+      ins->data.gyr_y = (float)((int16_t)(data[index + 3] << 8 | data[index + 2])) * 70.00f;
+      ins->data.gyr_z = (float)((int16_t)(data[index + 5] << 8 | data[index + 4])) * 70.00f;
+      ins->data.acc_x = (float)((int16_t)(data[index + 7] << 8 | data[index + 6])) * 0.122f;
+      ins->data.acc_y = (float)((int16_t)(data[index + 9] << 8 | data[index + 8])) * 0.122f;
+      ins->data.acc_z = (float)((int16_t)(data[index + 11] << 8 | data[index + 10])) * 0.122f;
+      ins->data.timestamp = data[index + 18] << 8 | data[index + 19] << 16 | data[index + 21];
+
+      // SEGGER_RTT_printf(0,
+      //                   "%sAcc:x:%d y:%d z:%d%s \n"
+      //                   "%sGxy:x:%d y:%d z:%d%s \n"
+      //                   "%stimestamp: %d \n%s",
+      //                   RTT_CTRL_TEXT_BRIGHT_RED, (int)ins->data.acc_x, (int)ins->data.acc_y, (int)ins->data.acc_z,
+      //                   RTT_CTRL_RESET, RTT_CTRL_TEXT_GREEN, (int)ins->data.gyr_x, (int)ins->data.gyr_y,
+      //                   (int)ins->data.gyr_z, RTT_CTRL_RESET, RTT_CTRL_TEXT_YELLOW, ins->data.timestamp,
+      //                   RTT_CTRL_RESET);
+
+      // motionFx
+
+      if (i == 0)
+        ins->data.timestamp_1 = ins->data.timestamp_2;
+      else {
+        ins->data.timestamp_2 = ins->data.timestamp;
+        lsm6ds3trMotionFxDetermin(ins);
+        ins->data.timestamp_1 = ins->data.timestamp_2;
+      }
     }
-
-    SEGGER_RTT_printf(0, "QUE IS Emp && num = %d time = %dms \n", num,
-                      (int)((ins->data.timestamp - old_record) * 25 / 1000));
-  }
-
+    SEGGER_RTT_printf(0, "%snum = %d\n%s", RTT_CTRL_TEXT_BRIGHT_GREEN, num, RTT_CTRL_RESET);
+    // SEGGER_RTT_printf(0, "QUE IS Emp && num = %d time = %dms \n", num,
+    //                   (int)((ins->data.timestamp - old_record) * 25 / 1000));
+  } else
+    SEGGER_RTT_printf(0, "%sQUE IS NOFULL\n%s", RTT_CTRL_TEXT_BRIGHT_GREEN, RTT_CTRL_RESET);
   return 0;
 }
 
+// int lsm6ds3trFifoResult(Lsm6ds3tr *ins) {
+//
+//   /* check watermark full */
+//   int result = lsm6ds3trFifoStatus2(ins);
+//
+//   CHECK_RESULT(result);
+//   if (ins->fifo.st == LSM6DS3TR_FIFO_FULL) {
+//     uint8_t num = 0;
+//     uint32_t old_record = 0;
+//
+//     SEGGER_RTT_printf(0, "%sQUE IS FULL\n%s", RTT_CTRL_TEXT_BRIGHT_GREEN, RTT_CTRL_RESET);
+//     while (ins->fifo.st != LSM6DS3TR_FIFO_EMPTY) {
+//       result = lsm6ds3trGetFifoInfo(ins);
+//       result |= lsm6ds3trFifoStatus2(ins);
+//       CHECK_RESULT(result);
+//
+//       // if (num == 0)
+//       //   old_record = ins->data.timestamp;
+//       if (num == 0) {
+//         old_record = ins->data.timestamp;
+//         ins->data.timestamp_1 = ins->data.timestamp;
+//         ins->data.timestamp_2 = ins->data.timestamp;
+//       } else
+//         ins->data.timestamp_2 = ins->data.timestamp;
+//
+//       SEGGER_RTT_printf(0,
+//                         "%sAcc:x:%d y:%d z:%d%s \n"
+//                         "%sGxy:x:%d y:%d z:%d%s \n"
+//                         "%stimestamp: %d \n%s",
+//                         RTT_CTRL_TEXT_BRIGHT_RED, (int)ins->data.acc_x, (int)ins->data.acc_y, (int)ins->data.acc_z,
+//                         RTT_CTRL_RESET, RTT_CTRL_TEXT_GREEN, (int)ins->data.gyr_x, (int)ins->data.gyr_y,
+//                         (int)ins->data.gyr_z, RTT_CTRL_RESET, RTT_CTRL_TEXT_YELLOW, ins->data.timestamp,
+//                         RTT_CTRL_RESET);
+//
+//       // motionFx
+//       // ins->data.timestamp_2 = ins->data.timestamp;
+//       lsm6ds3trMotionFxDetermin(ins);
+//       ins->data.timestamp_1 = ins->data.timestamp_2;
+//       num++;
+//     }
+//
+//     SEGGER_RTT_printf(0, "QUE IS Emp && num = %d time = %dms \n", num,
+//                       (int)((ins->data.timestamp - old_record) * 25 / 1000));
+//   } else
+//     osDelay(1);
+//
+//   return 0;
+// }
+
+/*------------------------------------------------- get fifo status and value by it ----------------------------------------------------------------*/
+int lsm6ds3trFifoStatus2It(Lsm6ds3tr *ins) {
+  HAL_StatusTypeDef st =
+      HAL_I2C_Mem_Read_IT(ins->i2c, ins->reg.read, LSM6DS3TRC_FIFO_STATUS2, I2C_MEMADD_SIZE_8BIT, ins->reg_read_buf, 1);
+  if (st != HAL_OK) {
+    ins->err_st = LSM6DS3TR_ACCESS_REG_FIFO_STATUS2_ERR;
+    return -1;
+  }
+  ins->read_sig_flag = LSM6DS3TR_READ_FLAG_FIFO_STATUS2;
+  return 0;
+}
+
+int lsm6ds3trGetFifoInfoIt(Lsm6ds3tr *ins) {
+  HAL_StatusTypeDef st =
+      HAL_I2C_Mem_Read_IT(ins->i2c, ins->reg.read, FIFO_DATA_OUT_L, I2C_MEMADD_SIZE_8BIT, ins->fifo_data_get_buf, 24);
+  if (st != HAL_OK) {
+    ins->err_st = LSM6DS3TR_ACCESS_REG_FIFO_DATA_OUT_ERR;
+    return -1;
+  }
+  ins->read_sig_flag = LSM6DS3TR_READ_FLAG_GET_FIFO_DATA;
+  return 0;
+}
+
+void lsm6ds3trFifoDataAnalysis(Lsm6ds3tr *ins) {
+  ins->data.gyr_x = (float)((int16_t)(ins->fifo_data_get_buf[1] << 8 | ins->fifo_data_get_buf[0])) * 70.00f;
+  ins->data.gyr_y = (float)((int16_t)(ins->fifo_data_get_buf[3] << 8 | ins->fifo_data_get_buf[2])) * 70.00f;
+  ins->data.gyr_z = (float)((int16_t)(ins->fifo_data_get_buf[5] << 8 | ins->fifo_data_get_buf[4])) * 70.00f;
+  ins->data.acc_x = (float)((int16_t)(ins->fifo_data_get_buf[7] << 8 | ins->fifo_data_get_buf[6])) * 0.122f;
+  ins->data.acc_y = (float)((int16_t)(ins->fifo_data_get_buf[9] << 8 | ins->fifo_data_get_buf[8])) * 0.122f;
+  ins->data.acc_z = (float)((int16_t)(ins->fifo_data_get_buf[11] << 8 | ins->fifo_data_get_buf[10])) * 0.122f;
+  ins->data.timestamp = ins->fifo_data_get_buf[18] << 8 | ins->fifo_data_get_buf[19] << 16 | ins->fifo_data_get_buf[21];
+
+  SEGGER_RTT_printf(0,
+                    "%sAcc:x:%d y:%d z:%d%s \n"
+                    "%sGxy:x:%d y:%d z:%d%s \n"
+                    "%stimestamp: %d \n%s",
+                    RTT_CTRL_TEXT_BRIGHT_RED, (int)ins->data.acc_x, (int)ins->data.acc_y, (int)ins->data.acc_z,
+                    RTT_CTRL_RESET, RTT_CTRL_TEXT_GREEN, (int)ins->data.gyr_x, (int)ins->data.gyr_y,
+                    (int)ins->data.gyr_z, RTT_CTRL_RESET, RTT_CTRL_TEXT_YELLOW, ins->data.timestamp, RTT_CTRL_RESET);
+}
+
+void lsm6ds3trFifoMotionFxAnalysis(Lsm6ds3tr *ins) {
+  static uint8_t first_analysis = 0;
+  if (first_analysis) {
+    ins->data.timestamp_2 = ins->data.timestamp;
+  } else {
+    ins->data.timestamp_1 = ins->data.timestamp_2;
+    first_analysis++;
+  }
+  lsm6ds3trMotionFxDetermin(ins);
+  ins->data.timestamp_1 = ins->data.timestamp_2;
+}
+
+int lsm6dstrFifoFlow(Lsm6ds3tr *ins) {
+  static uint16_t data_num = 0;
+  int result;
+
+  switch (ins->read_sig_flag) {
+    case LSM6DS3TR_READ_FLAG_FIFO_STATUS2:
+      result = lsm6ds3trGetFifoInfoIt(ins);
+      break;
+    case LSM6DS3TR_READ_FLAG_GET_FIFO_DATA:
+      lsm6ds3trFifoDataAnalysis(ins);
+      // lsm6ds3trFifoMotionFxAnalysis(ins);
+      if (data_num < LSM6DS3TR_FIFO_WATERMARK / 2) {
+        result = lsm6ds3trGetFifoInfoIt(ins);
+        data_num++;
+      } else
+        data_num = 0;
+      break;
+    default:
+      break;
+  }
+  CHECK_RESULT(result);
+  return 0;
+}
+
+/*------------------------------------------------- fifo init ----------------------------------------------------------------*/
 int lsm6dstrFifoInit(Lsm6ds3tr *ins) {
+
   int result = lsm6ds3trFifoWatermarkSet(ins, LSM6DS3TR_READ, LSM6DS3TR_WRITE, LSM6DS3TRC_FIFO_CRTL1,
-                                         LSM6DS3TRC_FIFO_CRTL2, 24 * 13);
+                                         LSM6DS3TRC_FIFO_CRTL2, LSM6DS3TR_FIFO_WATERMARK);
   CHECK_RESULT(result);
 
   result =
-      lsm6ds3trFifoModeSet(ins, LSM6DS3TR_WRITE, LSM6DS3TRC_FIFO_CRTL5, LSM6DS3TR_STREAM_MODE, LSM6DS3TR_FIFO_26Hz);
+      lsm6ds3trFifoModeSet(ins, LSM6DS3TR_WRITE, LSM6DS3TRC_FIFO_CRTL5, LSM6DS3TR_STREAM_MODE, LSM6DS3TR_FIFO_416Hz);
   CHECK_RESULT(result);
 
   result = lsm6ds3trTimerEnSet(ins, LSM6DS3TR_READ, LSM6DS3TR_WRITE, LSM6DS3TR_TIMER_CRTL10, LSM6DS3TR_TIMER_EN);
@@ -533,10 +693,13 @@ int lsm6dstrFifoInit(Lsm6ds3tr *ins) {
                                  LSM6DS3TR_DEC_FACTOR_NO);
   CHECK_RESULT(result);
 
-  lsm6ds3trFifoClear(ins);
+  result = lsm6ds3trFifoInt1Full(ins, LSM6DS3TR_READ, LSM6DS3TR_WRITE, LSM6DS3TR_INT1_CTRL, LSM6DS3TR_INT1_FULL_FLAG);
+  if (result != 0)
+    CHECK_RESULT(result);
   return 0;
 }
 
+/*------------------------------------------------- demo get measured data ----------------------------------------------------------------*/
 void lsm6ds3trAccGryOutput(Lsm6ds3tr *ins) {
   uint8_t buf[1] = {0};
   HAL_StatusTypeDef st =
@@ -554,7 +717,7 @@ void lsm6ds3trAccGryOutput(Lsm6ds3tr *ins) {
       ins->err_st = LSM6DS3TR_STATUS_UPDATE_ERR;
   } else {
     SEGGER_RTT_printf(0, "no ready \r\n", RTT_CTRL_TEXT_BRIGHT_BLUE);
-    ins->flag = LSM6DS3TR_FLAG_UNUPDATE;
+    ins->update_flag = LSM6DS3TR_FLAG_UNUPDATE;
 
     /* only test */
     osDelay(20);
@@ -578,140 +741,5 @@ void lsm6ds3trOutputReadCb(Lsm6ds3tr *ins) {
                     RTT_CTRL_TEXT_BRIGHT_RED, (int)ins->data.acc_x, (int)ins->data.acc_y, (int)ins->data.acc_z,
                     (int)ins->data.gyr_x, (int)ins->data.gyr_y, (int)ins->data.gyr_z, (int)ins->temp);
 
-  ins->flag = LSM6DS3TR_FLAG_UPDATED;
+  ins->update_flag = LSM6DS3TR_FLAG_UPDATED;
 }
-
-#define Kp 500.0f    // 比例增益支配率收敛到加速度计/磁强计
-#define Ki 0.005f    // 积分增益支配率的陀螺仪偏见的衔接
-#define halfT 0.01f  // 采样周期的一半
-
-float q0 = 1, q1 = 0, q2 = 0, q3 = 0;   // 四元数的元素，代表估计方向
-float exInt = 0, eyInt = 0, ezInt = 0;  // 按比例缩小积分误差
-float Yaw, Pitch, Roll;                 // 偏航角，俯仰角，翻滚角
-
-// 加速度单位g，陀螺仪rad/s
-void IMUUpdate(float gx, float gy, float gz, float ax, float ay, float az) {
-
-  float norm;
-  float vx, vy, vz;
-  float ex, ey, ez;
-
-  // 测量正常化,把加计的三维向量转成单位向量。
-  norm = sqrt(ax * ax + ay * ay + az * az);
-  ax = ax / norm;  //单位化
-  ay = ay / norm;
-  az = az / norm;
-
-  // 估计方向的重力,世界坐标系重力分向量是通过方向旋转矩阵的最后一列的三个元素乘上加速度就可以算出机体坐标系中的重力向量。
-  vx = 2 * (q1 * q3 - q0 * q2);                //由下向上方向的加速度在加速度计X分量
-  vy = 2 * (q0 * q1 + q2 * q3);                //由下向上方向的加速度在加速度计X分量
-  vz = q0 * q0 - q1 * q1 - q2 * q2 + q3 * q3;  //由下向上方向的加速度在加速度计Z分量
-
-  // 这个叉积向量仍旧是位于机体坐标系上的，而陀螺积分误差也是在机体坐标系，而且叉积的大小与陀螺积分误差成正比，正好拿来纠正陀螺。
-  //（你可以自己拿东西想象一下）由于陀螺是对机体直接积分，所以对陀螺的纠正量会直接体现在对机体坐标系的纠正。
-
-  ex = (ay * vz - az * vy);
-  ey = (az * vx - ax * vz);
-  ez = (ax * vy - ay * vx);
-
-  // 积分误差比例积分增益,计算陀螺仪测量的重力向量与估计方向的重力向量之间的误差。
-
-  exInt = exInt + ex * Ki;
-  eyInt = eyInt + ey * Ki;
-  ezInt = ezInt + ez * Ki;
-
-  // 调整后的陀螺仪测量,使用叉积误差来进行比例-积分（PI）修正陀螺仪的零偏。将修正量乘以比例增益Kp，并加上之前计算的积分误差exInt、eyInt和ezInt。
-  gx = gx + Kp * ex + exInt;
-  gy = gy + Kp * ey + eyInt;
-  gz = gz + Kp * ez + ezInt;
-
-  // 整合四元数率和正常化,根据陀螺仪的测量值和比例-积分修正值，对四元数进行更新。根据微分方程的离散化形式，将四元数的每个分量加上相应的微分项乘以采样周期的一半（halfT）。
-  q0 = q0 + (-q1 * gx - q2 * gy - q3 * gz) * halfT;
-  q1 = q1 + (q0 * gx + q2 * gz - q3 * gy) * halfT;
-  q2 = q2 + (q0 * gy - q1 * gz + q3 * gx) * halfT;
-  q3 = q3 + (q0 * gz + q1 * gy - q2 * gx) * halfT;
-
-  // 正常化四元数
-  norm = sqrt(q0 * q0 + q1 * q1 + q2 * q2 + q3 * q3);
-  q0 = q0 / norm;
-  q1 = q1 / norm;
-  q2 = q2 / norm;
-  q3 = q3 / norm;
-
-  Pitch = asin(2 * q2 * q3 + 2 * q0 * q1) * 57.3;                                          // pitch ,转换为度数
-  Roll = atan2(-2 * q1 * q3 + 2 * q0 * q2, q0 * q0 - q1 * q1 - q2 * q2 + q3 * q3) * 57.3;  // rollv
-  Yaw = atan2(2 * (q1 * q2 - q0 * q3), q0 * q0 - q1 * q1 + q2 * q2 - q3 * q3) * 57.3;  //偏移太大，等我找一个好用的
-
-  SEGGER_RTT_printf(0, "%s Pitch: %d ,Roll: %d ,Yaw: %d \r\n", RTT_CTRL_TEXT_BRIGHT_RED, (int)Pitch, (int)Roll,
-                    (int)Yaw);
-}
-
-void test2() {
-  uint8_t buf[1] = {0};
-  uint8_t data_buf[6] = {0};
-  int16_t acc_float[3] = {0};
-  int16_t gry_float[3] = {0};
-
-  uint8_t temp_buf[2] = {0};
-  int16_t temp_int16 = 0;
-  float temp = 0;
-
-  volatile int8_t data_buf2[6] = {0};
-
-  HAL_StatusTypeDef st = HAL_I2C_Mem_Read(&hi2c1, LSM6DS3TR_READ, LSM6DS3TRC_STATUS_REG, 1, buf, 1, 1);
-  if (buf[0] == 7) {
-
-    /* can get value */
-    st = HAL_I2C_Mem_Read(&hi2c1, LSM6DS3TR_READ, LSM6DS3TRC_OUTX_L_XL, I2C_MEMADD_SIZE_8BIT, data_buf, 6, 100);
-
-    int8_t a;
-    SEGGER_RTT_printf(0, "%d %d [%x %x]\n", INT8_MAX, sizeof(data_buf[1]), data_buf[0], data_buf[1]);
-    // int16_t t = (data_buf[1] << 8) | data_buf[0];
-    // float tf = t * 0.122f;
-    // SEGGER_RTT_printf(0, "%d ", (int)tf);
-
-    acc_float[0] = ((int16_t)(data_buf[1] << 8) | data_buf[0]) * 0.122f;
-    acc_float[1] = ((data_buf[3] << 8) | data_buf[2]) * 0.122f;
-    acc_float[2] = ((data_buf[5] << 8) | data_buf[4]) * 0.122f;
-
-    // SEGGER_RTT_printf(0, "%d\n", (int)acc_float[0]);
-
-    // acc_float[0] = (data_buf[1] << 8);
-    // acc_float[1] = (data_buf[3] << 8);
-    // acc_float[2] = (data_buf[5] << 8);
-    //
-    // for (int i = 0; i <= 5; i++) {
-    //   data_buf2[i] = data_buf[i];
-    // }
-    //
-    // acc_float[0] = (data_buf2[1] << 8);
-    // acc_float[1] = (data_buf2[3] << 8);
-    // acc_float[2] = (data_buf2[5] << 8);
-
-    st = HAL_I2C_Mem_Read(&hi2c1, LSM6DS3TR_READ, LSM6DS3TRC_OUTX_L_G, I2C_MEMADD_SIZE_8BIT, data_buf, 6, 100);
-
-    gry_float[0] = ((data_buf[1] << 8 | data_buf[0])) * 70.00f;
-    gry_float[1] = ((data_buf[3] << 8 | data_buf[2])) * 70.00f;
-    gry_float[2] = ((data_buf[5] << 8 | data_buf[4])) * 70.00f;
-
-    st = HAL_I2C_Mem_Read(&hi2c1, LSM6DS3TR_READ, LSM6DS3TRC_OUT_TEMP_L,
-                          I2C_MEMADD_SIZE_8BIT, temp_buf, 2, 100);
-    temp_int16 = temp_buf[1] << 8 | temp_buf[0];
-    temp = ((float)temp_int16) / 256.0 + 25.0;
-
-    // IMUUpdate(gry_float[0]/1000,gry_float[1]/1000,gry_float[2]/1000,acc_float[0]/1000,acc_float[1]/1000,acc_float[2]/1000);
-    SEGGER_RTT_printf(0,
-                      "%s acc: x:%d y:%d z:%d \r\n"
-                      " gxy :x:%d y:%d z:%d \r\n"
-                      " temp:%dC \r\n",
-                      RTT_CTRL_TEXT_BRIGHT_RED, (int)acc_float[0],
-                      (int)acc_float[1], (int)acc_float[2], (int)gry_float[0],
-                      (int)gry_float[1], (int)gry_float[2], (int)temp);
-  } else {
-    SEGGER_RTT_printf(0, "no ready \r\n", RTT_CTRL_TEXT_BRIGHT_BLUE, (int)Pitch,
-                      (int)Roll, (int)Yaw);
-  }
-}
-
-
-
