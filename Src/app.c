@@ -57,6 +57,7 @@ __NO_RETURN void mainThread(void* arg) {
 }
 
 __NO_RETURN void threadThread(void* arg) {
+  uint8_t a = 10000;
 
   osDelay(3000);
   while (1) {}
