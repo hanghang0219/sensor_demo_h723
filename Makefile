@@ -1,6 +1,6 @@
 TARGET= h723_ssr
 DEBUG = 1
-OPT = -Og
+OPT = -O0
 BUILD_DIR = build
 
 LIB_ROOT = ../..
@@ -72,9 +72,10 @@ C_INCLUDES =  \
 -I$(DEV_ENV)/Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F \
 -I$(DEV_ENV)/Drivers/CMSIS/Device/ST/STM32F4xx/Include \
 -I$(DEV_ENV)/Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2 \
+-I$(DEV_ENV)/Middlewares/ST/STM32_MotionFX_Library/Inc \
 -I$(DEV_ENV)/Drivers/CMSIS/Include \
 -I$(DEV_ENV)/Drivers/CMSIS/Device/ST/STM32H7xx/Include \
--I$(LIB_ROOT)/stm32armlibs/segger_rtt/Inc \
+-I$(LIB_ROOT)/stm32armlibs/segger_rtt/Inc\
 -IInc\
 
 
@@ -100,7 +101,7 @@ LDSCRIPT = $(DEV_ENV)/STM32H723ZGTx_FLASH.ld
 
 # libraries
 LIBS = -lc -lm -lnosys
-LIBDIR =
+LIBDIR = $(DEV_ENV)/Middlewares/ST/STM32_MotionFX_Library/Lib/*.a
 LDFLAGS = $(MCU) -specs=nano.specs -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--cref -Wl,--gc-sections
 
 # default action: build all
